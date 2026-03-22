@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Xunit;
-using xUnitRevitUtils;
+using xUnitRevitUtils;  
 
 namespace SampleLibrary
 {
@@ -34,11 +34,7 @@ namespace SampleLibrary
     [Fact]
     public void SampleFail()
     {
-#if pre2021
-            var feet = UnitUtils.ConvertToInternalUnits(3000, DisplayUnitType.DUT_MILLIMETERS);
-#else
             var feet = UnitUtils.ConvertToInternalUnits(3000, UnitTypeId.Feet);
-#endif
             Assert.Equal(5, feet);
     }
 

@@ -8,54 +8,85 @@
 
 ## Introduction
 
-An xUnit runner for Autodesk Revit. 
+An xUnit runner for Autodesk Revit.
 
 Check out our blog post on this 👉 https://speckle.systems/blog/xunitrevit !
 
-xUnitRevit uses [speckle.xunit.runner.wpf](https://github.com/Speckle-Next/speckle.xunit.runner.wpf) which is a fork of [xunit.runner.wpf](https://github.com/Pilchie/xunit.runner.wpf), it allows to easily develop and run xUnit tests in Revit. 
+xUnitRevit uses [speckle.xunit.runner.wpf](https://github.com/Speckle-Next/speckle.xunit.runner.wpf) which is a fork of [xunit.runner.wpf](https://github.com/Pilchie/xunit.runner.wpf), it allows to easily develop and run xUnit tests in Revit.
 
 Many thanks to all the developers of xunit and xunit.runner.wpf!
 
 ### Structure
 
-This repo is composed of 2 projects:
+This repo is composed of the following projects:
 
-- **xUnitRevit**: the actual Revit addin
-- **xUnitRevitUtils**: a utility library to help pass Revit data to the test libraries when running the tests
+**Modern (.NET 8 — Revit 2025+):**
+- **xUnitRevit.Modern**: Revit addin with UI runner and headless mode for CI/CD
+- **xUnitRevitUtils**: shared utility library (`xru` static class) for both UI and headless modes
+- **SampleLibrary.Modern**: sample tests — basic assertions + Revit API tests
+- **xUnitRevit.Headless.Console**: standalone console runner for testing the pipeline without Revit
+
+**Legacy (.NET Framework — Revit 2021–2023):**
+- **xUnitRevit**: the original Revit addin (WPF UI runner)
 
 
 
 ## Getting Started
 
-There are very few steps required to create and run your fist unit tests with xUnitRevit:
+### Modern (Revit 2025+ / .NET 8)
 
-1. create a copy of the [config sample file](xUnitRevit/config_sample.json) and re-name the copy to `config.json`
-2. follow the instructions [here](#configuration) to set up the config file 
-2. build/install xUnitRevit
-3. create a test library
-4. start Revit, launch the xUnitRevit addin and select the test library
-5. done! Add a star ⭐ to our repo if it was useful 😉
+1. Copy `xUnitRevit.Modern/config_sample.json` to `config.json`
+2. Build with the configuration matching your Revit version:
+   ```
+   dotnet build xUnitRevit.Modern/xUnitRevit.Modern.csproj -c Debug2026
+   ```
+   Available configurations: `Debug2025`, `Debug2026`, `Debug2027`
+3. The post-build step copies DLLs and `.addin` manifest to `%appdata%\Autodesk\Revit\Addins\<version>\`
+4. Create a test library targeting `net8.0-windows` with references to `xunit` and `xUnitRevitUtils`
+5. Add your test DLL path to `config.json` → `startupAssemblies`
+6. Start Revit — use the UI runner or enable headless mode
 
-### Building/installing xUnitRevit
+#### Headless / CI mode
 
-After cloning this repo, all you need to do to run xUnitRevit is to build the project in **Debug mode**, by selecting the build configuration that matches your Revit version.
+Set `headless: true` in `config.json` to run tests automatically on Revit startup and output JUnit XML results:
 
-![image](https://user-images.githubusercontent.com/2679513/88941424-e5b96200-d280-11ea-8ef4-12fbb0ed13d2.png)
+```json
+{
+  "startupAssemblies": ["C:\\path\\to\\MyTests.dll"],
+  "autoStart": true,
+  "headless": true,
+  "resultFormat": "junit",
+  "resultPath": "C:\\output\\TestResults.xml"
+}
+```
 
-**This will build the project and copy its dlls to the Revit addin folder** `%appdata%\Autodesk\Revit\Addins`.
+Tests run on a background thread. Results are written as JUnit XML, compatible with GitHub Actions, Azure Pipelines, and Jenkins.
 
-You can also, similarly, build the project in **Release mode**, and manually copy the built files from `xunit-Revit\Release`.
+#### Console runner (no Revit required)
+
+For testing the pipeline or running non-Revit tests:
+
+```
+dotnet run --project xUnitRevit.Headless.Console -- MyTests.dll TestResults.xml
+```
+
+### Legacy (Revit 2021–2023 / .NET Framework)
+
+1. Copy `xUnitRevit/config_sample.json` to `config.json`
+2. Build in **Debug mode** with the matching build configuration (e.g., `Debug2023`)
+3. The post-build step copies DLLs to the Revit addin folder
+4. Start Revit, launch xUnitRevit, and select your test library
 
 ### Creating a test library
 
-Creating a test library is pretty straightforward, at least we tried to make it as simple as possible!
+**For Revit 2025+ (.NET 8):**
+- Create a `net8.0-windows` class library
+- Add NuGet packages: `xunit`, `Autodesk.Revit.SDK`
+- Add a project reference to `xUnitRevitUtils`
 
-Just follow the steps below for Revit 2021:
-
-- create a new .net framework class library project (4.8 for Revit 2021)
-- add the NuGet packages
-  - `xunit`
-  - `xUnitRevitUtils.2021`
+**For Revit 2021–2023 (.NET Framework):**
+- Create a .NET Framework 4.8 class library
+- Add NuGet packages: `xunit`, `xUnitRevitUtils.2021` (or `.2022`, `.2023`)
 
 That's it, now we can start adding our tests.
 
@@ -173,20 +204,19 @@ public void MoveWallsUp()
 
 ### Configuration
 
-We've added a couple of optional settings for lazy developers like me, to help speed up frequent testing of a test library. You'll see a `config_sample.json` in the root of the project. Copy the file and rename the copy to `config.json` and set it to `copy local = true`. You'll then be able to configure
+Copy `config_sample.json` to `config.json` (next to the xUnitRevit DLL). Available settings:
 
-- `startupAssemblies`: if set, automatically loads a set of assemblies when xUnitRevit starts
-- `autoStart`: if true, automatically opens the xUnitRevit window after Revit loads
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `startupAssemblies` | `string[]` | `[]` | Paths to test DLLs to load on startup |
+| `autoStart` | `bool` | `false` | Auto-open the test runner window (UI mode) or auto-run tests (headless) |
+| `headless` | `bool` | `false` | Run tests without UI, output results to file |
+| `resultFormat` | `string` | `"junit"` | Output format for test results |
+| `resultPath` | `string` | `"./TestResults.xml"` | Path for test result output |
 
 ### Dll locking
 
-Dlls loaded by xUnitRevit are loaded in Revit's AppDomain, and therefore it's not possible to recompile them until Revit is closed (even if you see an auto reload option in the UI). But don't despair, since Revit 2020 it's possible to *edit & continue* your code while debugging, so you won't have to restart Revit each time.
-
-### Next steps
-
-As for next steps, we're planning to add additional features to run xUnitRevit from a CI/CD routine. 
-
-Stay tuned!
+DLLs loaded by xUnitRevit are loaded in Revit's AppDomain, and therefore it's not possible to recompile them until Revit is closed (even if you see an auto reload option in the UI). Since Revit 2020 it's possible to *edit & continue* your code while debugging, so you won't have to restart Revit each time.
 
 ## Contributing
 

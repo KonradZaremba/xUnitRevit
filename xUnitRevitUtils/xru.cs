@@ -1,6 +1,5 @@
-﻿using Autodesk.Revit.DB;
+using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using Autodesk.Revit.UI.Selection;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,67 +11,92 @@ using Xunit;
 namespace xUnitRevitUtils
 {
   /// <summary>
-  /// Utility class with methods and properties used by the xUnit Revit plugin
+  /// Utility class with methods and properties used by the xUnit Revit plugin.
+  /// Supports both UI mode (with UIApplication) and headless mode (DB-only).
   /// </summary>
   public static class xru
   {
     public static UIApplication Uiapp { get; set; }
-
+    public static Autodesk.Revit.ApplicationServices.Application App { get; set; }
     private static List<Action> Queue { get; set; }
     private static ExternalEvent EventHandler { get; set; }
-
     public static SynchronizationContext UiContext { get; set; }
 
+    /// <summary>
+    /// Whether the runner is operating in headless mode (no UI).
+    /// </summary>
+    public static bool IsHeadless { get; private set; }
+
+    /// <summary>
+    /// Initialize for UI mode (traditional Revit add-in with full UI access).
+    /// </summary>
     public static void Initialize(UIApplication uiapp, SynchronizationContext uiContext, ExternalEvent eventHandler, List<Action> queue)
     {
+      IsHeadless = false;
       Uiapp = uiapp;
+      App = uiapp.Application;
       UiContext = uiContext;
       EventHandler = eventHandler;
       Queue = queue;
     }
 
+    /// <summary>
+    /// Initialize for headless mode (DB-only, no UIApplication).
+    /// Used with Revit Platform Services or automated testing.
+    /// </summary>
+    public static void InitializeHeadless(Autodesk.Revit.ApplicationServices.Application app)
+    {
+      IsHeadless = true;
+      App = app;
+      Uiapp = null;
+      UiContext = null;
+      EventHandler = null;
+      Queue = null;
+    }
+
     #region utility methods
 
-
     /// <summary>
-    /// Returns the selected elements in the active document
+    /// Returns the selected elements in the active document.
+    /// Only available in UI mode.
     /// </summary>
-    /// <returns></returns>
     public static List<Element> GetActiveSelection()
     {
+      if (IsHeadless)
+        throw new InvalidOperationException("GetActiveSelection is not available in headless mode.");
+
       Assert.NotNull(Uiapp);
 
       if (Uiapp.ActiveUIDocument != null)
         return Uiapp.ActiveUIDocument.Selection.GetElementIds().Select(x => Uiapp.ActiveUIDocument.Document.GetElement(x)).ToList();
       return new List<Element>();
     }
+
     /// <summary>
-    /// Opens and activates a document if not open already
+    /// Opens a document. In UI mode, opens and activates it. In headless mode, opens without UI.
     /// </summary>
-    /// <param name="filePath">Path to the file to open</param>
     public static Document OpenDoc(string filePath)
     {
+      if (IsHeadless)
+      {
+        Assert.NotNull(App);
+        var doc = App.OpenDocumentFile(filePath);
+        Assert.NotNull(doc);
+        return doc;
+      }
+
       Assert.NotNull(Uiapp);
-      Document doc = null;
-      //OpenAndActivateDocument only works if run from the current context
-      UiContext.Send(x => { doc = Uiapp.OpenAndActivateDocument(filePath).Document; }, null);
-      Assert.NotNull(doc);
-      return doc;
+      Document doc2 = null;
+      UiContext.Send(x => { doc2 = Uiapp.OpenAndActivateDocument(filePath).Document; }, null);
+      Assert.NotNull(doc2);
+      return doc2;
     }
 
-
     /// <summary>
-    /// Creates a new empty document
+    /// Creates a new empty document.
     /// </summary>
-    /// <param name="templatePath">Path to the project template</param>
-    /// <param name="filePath">Path where to save the new doc</param>
-    /// <param name="overwrite">If true overwrites existing files with same name</param>
-    /// <returns></returns>
     public static Document CreateNewDoc(string templatePath, string filePath, bool overwrite = true)
     {
-      Assert.NotNull(Uiapp);
-      Document doc = null;
-
       try
       {
         if (overwrite && File.Exists(filePath))
@@ -80,35 +104,67 @@ namespace xUnitRevitUtils
       }
       catch { }
 
-      //OpenAndActivateDocument only works if run from the current context
-      UiContext.Send(x =>
+      if (IsHeadless)
       {
-        //if already open, just use it
+        Assert.NotNull(App);
+        Document doc = null;
+
         if (!File.Exists(filePath))
         {
-          doc = Uiapp.Application.NewProjectDocument(templatePath);
+          doc = App.NewProjectDocument(templatePath);
           doc.SaveAs(filePath);
           doc.Close();
         }
 
-        doc = Uiapp.OpenAndActivateDocument(filePath).Document;
+        doc = App.OpenDocumentFile(filePath);
+        Assert.NotNull(doc);
+        return doc;
       }
-      , null);
-      Assert.NotNull(doc);
-      return doc;
+
+      Assert.NotNull(Uiapp);
+      Document doc2 = null;
+      UiContext.Send(x =>
+      {
+        if (!File.Exists(filePath))
+        {
+          doc2 = Uiapp.Application.NewProjectDocument(templatePath);
+          doc2.SaveAs(filePath);
+          doc2.Close();
+        }
+
+        doc2 = Uiapp.OpenAndActivateDocument(filePath).Document;
+      }, null);
+      Assert.NotNull(doc2);
+      return doc2;
     }
 
-
     /// <summary>
-    /// Runs an Action in a Revit transaction, uses TaskCompletionSource to communicate when done
+    /// Runs an Action in a Revit transaction.
+    /// In UI mode, uses ExternalEvent queue. In headless mode, executes directly.
     /// </summary>
-    /// <param name="action">Action to run</param>
-    /// <param name="doc">Revit Document</param>
-    /// <param name="transactionName">Transaction Name</param>
-    /// <param name="ignoreWarnings">Enable to swallow all warnings generated by the transaction and prevent them from being raised within Revit</param>
-    /// <returns></returns>
     public static Task RunInTransaction(Action action, Document doc, string transactionName = "transaction", bool ignoreWarnings = false)
     {
+      if (IsHeadless)
+      {
+        return Task.Run(() =>
+        {
+          using (Transaction transaction = new Transaction(doc, transactionName))
+          {
+            transaction.Start();
+
+            if (ignoreWarnings)
+            {
+              var options = transaction.GetFailureHandlingOptions();
+              options.SetFailuresPreprocessor(new IgnoreAllWarnings());
+              transaction.SetFailureHandlingOptions(options);
+            }
+
+            action.Invoke();
+            transaction.Commit();
+          }
+        });
+      }
+
       var tcs = new TaskCompletionSource<string>();
       Queue.Add(new Action(() =>
       {
@@ -139,17 +195,18 @@ namespace xUnitRevitUtils
       EventHandler.Raise();
 
       return tcs.Task;
-
     }
 
     /// <summary>
-    /// Runs an Action, uses TaskCompletionSource to communicate when done
+    /// Runs an Action. In UI mode, uses ExternalEvent queue. In headless mode, executes directly.
     /// </summary>
-    /// <param name="action">Action to run</param>
-    /// <param name="doc">Revit Document</param>
-    /// <returns></returns>
     public static Task Run(Action action, Document doc)
     {
+      if (IsHeadless)
+      {
+        return Task.Run(() => action.Invoke());
+      }
+
       var tcs = new TaskCompletionSource<string>();
       Queue.Add(new Action(() =>
       {
@@ -167,7 +224,6 @@ namespace xUnitRevitUtils
       EventHandler.Raise();
 
       return tcs.Task;
-
     }
 
     /// <summary>
@@ -187,7 +243,6 @@ namespace xUnitRevitUtils
         return FailureProcessingResult.Continue;
       }
     }
-
 
     #endregion
   }

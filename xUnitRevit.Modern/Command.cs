@@ -1,0 +1,21 @@
+using System.Threading;
+using Autodesk.Revit.Attributes;
+using Autodesk.Revit.DB;
+using Autodesk.Revit.UI;
+
+namespace xUnitRevit
+{
+  [Transaction(TransactionMode.Manual)]
+  public class Command : IExternalCommand
+  {
+    public Result Execute(
+      ExternalCommandData commandData,
+      ref string message,
+      ElementSet elements)
+    {
+      UIApplication uiapp = commandData.Application;
+      Runner.Launch(uiapp);
+      return Result.Succeeded;
+    }
+  }
+}

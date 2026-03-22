@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>SampleLibrary.Modern</RootNamespace>
+    <AssemblyName>SampleLibrary.Modern</AssemblyName>
+    <IsTestProject>false</IsTestProject>
+    <RevitVersion Condition="'$(RevitVersion)' == ''">2026</RevitVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="Autodesk.Revit.SDK" Version="$(RevitVersion).*" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\xUnitRevitUtils\xUnitRevitUtils.csproj" />
+    <ProjectReference Include="..\xUnitRevit.Modern\xUnitRevit.Modern.csproj" />
+  </ItemGroup>
+
+</Project>

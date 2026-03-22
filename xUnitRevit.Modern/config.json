@@ -1,0 +1,7 @@
+{
+  "startupAssemblies": [],
+  "autoStart": false,
+  "headless": false,
+  "resultFormat": "junit",
+  "resultPath": "./TestResults.xml"
+}

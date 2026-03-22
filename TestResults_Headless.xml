@@ -1,0 +1,146 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<testsuites tests="33" failures="23" skipped="1" time="0.659">
+  <testsuite name="SampleLibrary.Modern.GeometryTests" tests="3" failures="0" skipped="0" time="0.138" timestamp="2026-03-22T08:14:34.0984560Z">
+    <testcase name="SampleLibrary.Modern.GeometryTests.PointDistanceCalculation" classname="SampleLibrary.Modern.GeometryTests" time="0.138" />
+    <testcase name="SampleLibrary.Modern.GeometryTests.VolumeCalculation" classname="SampleLibrary.Modern.GeometryTests" time="0.000" />
+    <testcase name="SampleLibrary.Modern.GeometryTests.AreaCalculation" classname="SampleLibrary.Modern.GeometryTests" time="0.000" />
+  </testsuite>
+  <testsuite name="SampleLibrary.Modern.BasicTests" tests="8" failures="1" skipped="1" time="0.146" timestamp="2026-03-22T08:14:34.0991157Z">
+    <testcase name="SampleLibrary.Modern.BasicTests.StringContains" classname="SampleLibrary.Modern.BasicTests" time="0.143" />
+    <testcase name="SampleLibrary.Modern.BasicTests.MillimetersToFeetConversion(mm: 914,39999999999998, expectedFeet: 3)" classname="SampleLibrary.Modern.BasicTests" time="0.000" />
+    <testcase name="SampleLibrary.Modern.BasicTests.MillimetersToFeetConversion(mm: 304,80000000000001, expectedFeet: 1)" classname="SampleLibrary.Modern.BasicTests" time="0.000" />
+    <testcase name="SampleLibrary.Modern.BasicTests.MillimetersToFeetConversion(mm: 609,60000000000002, expectedFeet: 2)" classname="SampleLibrary.Modern.BasicTests" time="0.000" />
+    <testcase name="SampleLibrary.Modern.BasicTests.SkippedTest" classname="SampleLibrary.Modern.BasicTests" time="0.000">
+      <skipped message="Skipped to verify skip reporting" />
+    </testcase>
+    <testcase name="SampleLibrary.Modern.BasicTests.IntentionalFailure" classname="SampleLibrary.Modern.BasicTests" time="0.003">
+      <failure message="Assert.Equal() Failure: Values differ&#xD;&#xA;Expected: 42&#xD;&#xA;Actual:   54">   at Xunit.Assert.Equal[T](T expected, T actual, IEqualityComparer`1 comparer) in /_/src/xunit.assert/Asserts/EqualityAsserts.cs:line 154
+   at Xunit.Assert.Equal[T](T expected, T actual) in /_/src/xunit.assert/Asserts/EqualityAsserts.cs:line 89
+   at SampleLibrary.Modern.BasicTests.IntentionalFailure() in C:\Users\konra\source\repos\xUnitRevitFork\SampleLibrary.Modern\BasicTests.cs:line 47
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
+    </testcase>
+    <testcase name="SampleLibrary.Modern.BasicTests.SimpleAddition" classname="SampleLibrary.Modern.BasicTests" time="0.000" />
+    <testcase name="SampleLibrary.Modern.BasicTests.ListHasExpectedCount" classname="SampleLibrary.Modern.BasicTests" time="0.000" />
+  </testsuite>
+  <testsuite name="SampleLibrary.Modern.GeometryExtractionTests" tests="3" failures="3" skipped="0" time="0.178" timestamp="2026-03-22T08:14:34.0992180Z">
+    <testcase name="SampleLibrary.Modern.GeometryExtractionTests.WallBoundingBoxIsValid" classname="SampleLibrary.Modern.GeometryExtractionTests" time="0.133">
+      <failure message="Could not load file or assembly 'RevitAPI, Version=26.0.10.0, Culture=neutral, PublicKeyToken=null'. Nie można odnaleźć określonego pliku.">   at SampleLibrary.Modern.GeometryExtractionTests.WallBoundingBoxIsValid()
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
+    </testcase>
+    <testcase name="SampleLibrary.Modern.GeometryExtractionTests.WallLocationIsLine" classname="SampleLibrary.Modern.GeometryExtractionTests" time="0.000">
+      <failure message="Could not load file or assembly 'RevitAPI, Version=26.0.10.0, Culture=neutral, PublicKeyToken=null'. Nie można odnaleźć określonego pliku.">   at SampleLibrary.Modern.GeometryExtractionTests.WallLocationIsLine()
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
+    </testcase>
+    <testcase name="SampleLibrary.Modern.GeometryExtractionTests.WallHasSolid" classname="SampleLibrary.Modern.GeometryExtractionTests" time="0.044">
+      <failure message="Could not load file or assembly 'RevitAPI, Version=26.0.10.0, Culture=neutral, PublicKeyToken=null'. Nie można odnaleźć określonego pliku.">   at SampleLibrary.Modern.GeometryExtractionTests.WallHasSolid()
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="SampleLibrary.Modern.TransactionTests" tests="3" failures="3" skipped="0" time="0.179" timestamp="2026-03-22T08:14:34.0992448Z">
+    <testcase name="SampleLibrary.Modern.TransactionTests.RunInTransactionHelper" classname="SampleLibrary.Modern.TransactionTests" time="0.133">
+      <failure message="Could not load file or assembly 'RevitAPI, Version=26.0.10.0, Culture=neutral, PublicKeyToken=null'. Nie można odnaleźć określonego pliku.">   at SampleLibrary.Modern.TransactionTests.RunInTransactionHelper()
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
+    </testcase>
+    <testcase name="SampleLibrary.Modern.TransactionTests.CreateAndDeleteWall" classname="SampleLibrary.Modern.TransactionTests" time="0.046">
+      <failure message="Could not load file or assembly 'RevitAPI, Version=26.0.10.0, Culture=neutral, PublicKeyToken=null'. Nie można odnaleźć określonego pliku.">   at SampleLibrary.Modern.TransactionTests.CreateAndDeleteWall()
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
+    </testcase>
+    <testcase name="SampleLibrary.Modern.TransactionTests.ModifyWallParameterAndRollBack" classname="SampleLibrary.Modern.TransactionTests" time="0.000">
+      <failure message="Could not load file or assembly 'RevitAPI, Version=26.0.10.0, Culture=neutral, PublicKeyToken=null'. Nie można odnaleźć określonego pliku.">   at SampleLibrary.Modern.TransactionTests.ModifyWallParameterAndRollBack()
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="SampleLibrary.Modern.UnitConversionTests" tests="8" failures="8" skipped="0" time="0.180" timestamp="2026-03-22T08:14:34.0997012Z">
+    <testcase name="SampleLibrary.Modern.UnitConversionTests.MillimetersToFeetConversion(mm: 2000, expectedFeet: 6,56168)" classname="SampleLibrary.Modern.UnitConversionTests" time="0.133">
+      <failure message="Could not load file or assembly 'RevitAPI, Version=26.0.10.0, Culture=neutral, PublicKeyToken=null'. Nie można odnaleźć określonego pliku.">   at SampleLibrary.Modern.UnitConversionTests.MillimetersToFeetConversion(Double mm, Double expectedFeet)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)</failure>
+    </testcase>
+    <testcase name="SampleLibrary.Modern.UnitConversionTests.MillimetersToFeetConversion(mm: 1000, expectedFeet: 3,28084)" classname="SampleLibrary.Modern.UnitConversionTests" time="0.045">
+      <failure message="Could not load file or assembly 'RevitAPI, Version=26.0.10.0, Culture=neutral, PublicKeyToken=null'. Nie można odnaleźć określonego pliku.">   at SampleLibrary.Modern.UnitConversionTests.MillimetersToFeetConversion(Double mm, Double expectedFeet)
+   at InvokeStub_UnitConversionTests.MillimetersToFeetConversion(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)</failure>
+    </testcase>
+    <testcase name="SampleLibrary.Modern.UnitConversionTests.MillimetersToFeetConversion(mm: 3000, expectedFeet: 9,8425200000000004)" classname="SampleLibrary.Modern.UnitConversionTests" time="0.000">
+      <failure message="Could not load file or assembly 'RevitAPI, Version=26.0.10.0, Culture=neutral, PublicKeyToken=null'. Nie można odnaleźć określonego pliku.">   at SampleLibrary.Modern.UnitConversionTests.MillimetersToFeetConversion(Double mm, Double expectedFeet)
+   at InvokeStub_UnitConversionTests.MillimetersToFeetConversion(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)</failure>
+    </testcase>
+    <testcase name="SampleLibrary.Modern.UnitConversionTests.SquareMetersConversion" classname="SampleLibrary.Modern.UnitConversionTests" time="0.000">
+      <failure message="Could not load file or assembly 'RevitAPI, Version=26.0.10.0, Culture=neutral, PublicKeyToken=null'. Nie można odnaleźć określonego pliku.">   at SampleLibrary.Modern.UnitConversionTests.SquareMetersConversion()
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
+    </testcase>
+    <testcase name="SampleLibrary.Modern.UnitConversionTests.FeetToMillimetersConversion(feet: 10, expectedMm: 3048)" classname="SampleLibrary.Modern.UnitConversionTests" time="0.000">
+      <failure message="Could not load file or assembly 'RevitAPI, Version=26.0.10.0, Culture=neutral, PublicKeyToken=null'. Nie można odnaleźć określonego pliku.">   at SampleLibrary.Modern.UnitConversionTests.FeetToMillimetersConversion(Double feet, Double expectedMm)
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeDirectByRefWithFewArgs(Object obj, Span`1 copyOfArgs, BindingFlags invokeAttr)</failure>
+    </testcase>
+    <testcase name="SampleLibrary.Modern.UnitConversionTests.FeetToMillimetersConversion(feet: 2, expectedMm: 609,60000000000002)" classname="SampleLibrary.Modern.UnitConversionTests" time="0.000">
+      <failure message="Could not load file or assembly 'RevitAPI, Version=26.0.10.0, Culture=neutral, PublicKeyToken=null'. Nie można odnaleźć określonego pliku.">   at SampleLibrary.Modern.UnitConversionTests.FeetToMillimetersConversion(Double feet, Double expectedMm)
+   at InvokeStub_UnitConversionTests.FeetToMillimetersConversion(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)</failure>
+    </testcase>
+    <testcase name="SampleLibrary.Modern.UnitConversionTests.FeetToMillimetersConversion(feet: 1, expectedMm: 304,80000000000001)" classname="SampleLibrary.Modern.UnitConversionTests" time="0.000">
+      <failure message="Could not load file or assembly 'RevitAPI, Version=26.0.10.0, Culture=neutral, PublicKeyToken=null'. Nie można odnaleźć określonego pliku.">   at SampleLibrary.Modern.UnitConversionTests.FeetToMillimetersConversion(Double feet, Double expectedMm)
+   at InvokeStub_UnitConversionTests.FeetToMillimetersConversion(Object, Span`1)
+   at System.Reflection.MethodBaseInvoker.InvokeWithFewArgs(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)</failure>
+    </testcase>
+    <testcase name="SampleLibrary.Modern.UnitConversionTests.CubicMetersConversion" classname="SampleLibrary.Modern.UnitConversionTests" time="0.000">
+      <failure message="Could not load file or assembly 'RevitAPI, Version=26.0.10.0, Culture=neutral, PublicKeyToken=null'. Nie można odnaleźć określonego pliku.">   at SampleLibrary.Modern.UnitConversionTests.CubicMetersConversion()
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="SampleLibrary.Modern.RevitDocumentTests" tests="3" failures="3" skipped="0" time="0.050" timestamp="2026-03-22T08:14:34.0998222Z">
+    <testcase name="SampleLibrary.Modern.RevitDocumentTests.CanOpenDocument" classname="SampleLibrary.Modern.RevitDocumentTests" time="0.004">
+      <failure message="Could not load file or assembly 'RevitAPI, Version=26.0.10.0, Culture=neutral, PublicKeyToken=null'. Nie można odnaleźć określonego pliku.">   at SampleLibrary.Modern.RevitDocumentTests.CanOpenDocument()
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
+    </testcase>
+    <testcase name="SampleLibrary.Modern.RevitDocumentTests.DocumentHasActiveView" classname="SampleLibrary.Modern.RevitDocumentTests" time="0.000">
+      <failure message="Could not load file or assembly 'RevitAPI, Version=26.0.10.0, Culture=neutral, PublicKeyToken=null'. Nie można odnaleźć określonego pliku.">   at SampleLibrary.Modern.RevitDocumentTests.DocumentHasActiveView()
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
+    </testcase>
+    <testcase name="SampleLibrary.Modern.RevitDocumentTests.ApplicationIsInitialized" classname="SampleLibrary.Modern.RevitDocumentTests" time="0.046">
+      <failure message="Could not load file or assembly 'RevitAPI, Version=26.0.10.0, Culture=neutral, PublicKeyToken=null'. Nie można odnaleźć określonego pliku.">   at SampleLibrary.Modern.RevitDocumentTests.ApplicationIsInitialized()
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="SampleLibrary.Modern.ElementCollectorTests" tests="5" failures="5" skipped="0" time="0.050" timestamp="2026-03-22T08:14:34.0998502Z">
+    <testcase name="SampleLibrary.Modern.ElementCollectorTests.WallsHaveValidVolume" classname="SampleLibrary.Modern.ElementCollectorTests" time="0.004">
+      <failure message="Could not load file or assembly 'RevitAPI, Version=26.0.10.0, Culture=neutral, PublicKeyToken=null'. Nie można odnaleźć określonego pliku.">   at SampleLibrary.Modern.ElementCollectorTests.WallsHaveValidVolume()
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
+    </testcase>
+    <testcase name="SampleLibrary.Modern.ElementCollectorTests.CollectLevels" classname="SampleLibrary.Modern.ElementCollectorTests" time="0.045">
+      <failure message="Could not load file or assembly 'RevitAPI, Version=26.0.10.0, Culture=neutral, PublicKeyToken=null'. Nie można odnaleźć określonego pliku.">   at SampleLibrary.Modern.ElementCollectorTests.CollectLevels()
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
+    </testcase>
+    <testcase name="SampleLibrary.Modern.ElementCollectorTests.CollectViewsInDocument" classname="SampleLibrary.Modern.ElementCollectorTests" time="0.000">
+      <failure message="Could not load file or assembly 'RevitAPI, Version=26.0.10.0, Culture=neutral, PublicKeyToken=null'. Nie można odnaleźć określonego pliku.">   at SampleLibrary.Modern.ElementCollectorTests.CollectViewsInDocument()
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
+    </testcase>
+    <testcase name="SampleLibrary.Modern.ElementCollectorTests.CollectAllWalls" classname="SampleLibrary.Modern.ElementCollectorTests" time="0.000">
+      <failure message="Could not load file or assembly 'RevitAPI, Version=26.0.10.0, Culture=neutral, PublicKeyToken=null'. Nie można odnaleźć określonego pliku.">   at SampleLibrary.Modern.ElementCollectorTests.CollectAllWalls()
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
+    </testcase>
+    <testcase name="SampleLibrary.Modern.ElementCollectorTests.CollectWallTypes" classname="SampleLibrary.Modern.ElementCollectorTests" time="0.000">
+      <failure message="Could not load file or assembly 'RevitAPI, Version=26.0.10.0, Culture=neutral, PublicKeyToken=null'. Nie można odnaleźć określonego pliku.">   at SampleLibrary.Modern.ElementCollectorTests.CollectWallTypes()
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
+    </testcase>
+  </testsuite>
+</testsuites>

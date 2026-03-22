@@ -1,0 +1,101 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>xUnitRevit</RootNamespace>
+    <AssemblyName>xUnitRevit</AssemblyName>
+    <Version>2.0.0</Version>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <Authors>Speckle</Authors>
+    <Company>Speckle</Company>
+    <Description>xUnit runner for Revit 2025+ (.NET 8)</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <!-- Default RevitVersion -->
+    <RevitVersion Condition="'$(RevitVersion)' == ''">2025</RevitVersion>
+  </PropertyGroup>
+
+  <!-- Version-specific configurations -->
+  <!--2025-->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug2025'">
+    <RevitVersion>2025</RevitVersion>
+    <DefineConstants>DEBUG;TRACE;REVIT2025_OR_LATER</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release2025'">
+    <RevitVersion>2025</RevitVersion>
+    <DefineConstants>TRACE;REVIT2025_OR_LATER</DefineConstants>
+  </PropertyGroup>
+  <!--2026-->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug2026'">
+    <RevitVersion>2026</RevitVersion>
+    <DefineConstants>DEBUG;TRACE;REVIT2025_OR_LATER;REVIT2026_OR_LATER</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release2026'">
+    <RevitVersion>2026</RevitVersion>
+    <DefineConstants>TRACE;REVIT2025_OR_LATER;REVIT2026_OR_LATER</DefineConstants>
+  </PropertyGroup>
+  <!--2027-->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug2027'">
+    <RevitVersion>2027</RevitVersion>
+    <DefineConstants>DEBUG;TRACE;REVIT2025_OR_LATER;REVIT2026_OR_LATER;REVIT2027_OR_LATER</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release2027'">
+    <RevitVersion>2027</RevitVersion>
+    <DefineConstants>TRACE;REVIT2025_OR_LATER;REVIT2026_OR_LATER;REVIT2027_OR_LATER</DefineConstants>
+  </PropertyGroup>
+
+  <!-- Select Revit API NuGet based on version (official Autodesk SDK) -->
+  <Choose>
+    <When Condition="'$(RevitVersion)' == '2025'">
+      <ItemGroup>
+        <PackageReference Include="Autodesk.Revit.SDK" Version="2025.*" ExcludeAssets="runtime" />
+      </ItemGroup>
+    </When>
+    <When Condition="'$(RevitVersion)' == '2026'">
+      <ItemGroup>
+        <PackageReference Include="Autodesk.Revit.SDK" Version="2026.*" ExcludeAssets="runtime" />
+      </ItemGroup>
+    </When>
+    <When Condition="'$(RevitVersion)' == '2027'">
+      <ItemGroup>
+        <!-- Update when Revit 2027 NuGet becomes available -->
+        <PackageReference Include="Autodesk.Revit.SDK" Version="2027.*" ExcludeAssets="runtime" />
+      </ItemGroup>
+    </When>
+  </Choose>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.*" />
+    <PackageReference Include="xunit.runner.utility" Version="2.9.*" />
+    <PackageReference Include="xunit.abstractions" Version="2.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\xUnitRevitUtils\xUnitRevitUtils.csproj" />
+  </ItemGroup>
+
+  <!-- Post-build: copy to Revit addins folder -->
+  <Target Name="AfterBuild" AfterTargets="Build">
+    <CallTarget Condition="$(Configuration.StartsWith('Debug'))" Targets="AfterBuildDebug" />
+    <CallTarget Condition="$(Configuration.StartsWith('Release'))" Targets="AfterBuildRelease" />
+  </Target>
+
+  <Target Name="AfterBuildDebug">
+    <ItemGroup>
+      <SourceDLLs Include="$(TargetDir)\**\*.*" />
+      <SourceManifest Include="$(ProjectDir)*.addin" />
+    </ItemGroup>
+    <Copy DestinationFolder="$(AppData)\Autodesk\REVIT\Addins\$(RevitVersion)\$(AssemblyName)\%(RecursiveDir)" SourceFiles="@(SourceDLLs)" />
+    <Copy DestinationFolder="$(AppData)\Autodesk\REVIT\Addins\$(RevitVersion)\" SourceFiles="@(SourceManifest)" />
+  </Target>
+
+  <Target Name="AfterBuildRelease">
+    <ItemGroup>
+      <SourceDLLs Include="$(TargetDir)\**\*.*" />
+      <SourceManifest Include="$(ProjectDir)*.addin" />
+    </ItemGroup>
+    <Copy DestinationFolder="$(SolutionDir)\Release\Release$(RevitVersion)\$(AssemblyName)\%(RecursiveDir)" SourceFiles="@(SourceDLLs)" />
+    <Copy DestinationFolder="$(SolutionDir)\Release\Release$(RevitVersion)\" SourceFiles="@(SourceManifest)" />
+  </Target>
+
+</Project>

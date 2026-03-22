@@ -1,7 +1,5 @@
-# .NET Desktop
-# Build and run tests for .NET Desktop or Windows classic desktop solutions.
-# Add steps that publish symbols, save build artifacts, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/apps/windows/dot-net
+# xUnitRevit CI Pipeline
+# Builds legacy (.NET 4.8, Revit 2021-2024) and modern (.NET 8, Revit 2025-2027) projects
 
 trigger:
   branches:
@@ -15,35 +13,73 @@ pool:
 variables:
   solution: '**/*.sln'
   buildPlatform: 'Any CPU'
-  buildConfiguration: 'Release'
+
+# Build matrix for all supported Revit versions
+strategy:
+  matrix:
+    Revit2021:
+      revitVersion: '2021'
+      buildConfiguration: 'Release2021'
+      projectType: 'legacy'
+    Revit2022:
+      revitVersion: '2022'
+      buildConfiguration: 'Release2022'
+      projectType: 'legacy'
+    Revit2023:
+      revitVersion: '2023'
+      buildConfiguration: 'Release2023'
+      projectType: 'legacy'
+    Revit2024:
+      revitVersion: '2024'
+      buildConfiguration: 'Release2024'
+      projectType: 'legacy'
+    Revit2025:
+      revitVersion: '2025'
+      buildConfiguration: 'Release2025'
+      projectType: 'modern'
+    Revit2026:
+      revitVersion: '2026'
+      buildConfiguration: 'Release2026'
+      projectType: 'modern'
+    Revit2027:
+      revitVersion: '2027'
+      buildConfiguration: 'Release2027'
+      projectType: 'modern'
 
 steps:
 - task: NuGetToolInstaller@1
+
+- task: UseDotNet@2
+  condition: eq(variables['projectType'], 'modern')
+  inputs:
+    packageType: 'sdk'
+    version: '8.x'
 
 - task: NuGetCommand@2
   inputs:
     restoreSolution: '$(solution)'
 
+# Build legacy projects (Revit 2021-2024)
 - task: VSBuild@1
+  condition: eq(variables['projectType'], 'legacy')
   inputs:
     solution: '$(solution)'
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
 
-# - task: VSTest@2
-#   inputs:
-#     platform: '$(buildPlatform)'
-#     configuration: '$(buildConfiguration)'
+# Build modern project (Revit 2025-2027)
+- script: dotnet build xUnitRevit.Modern/xUnitRevit.Modern.csproj -c $(buildConfiguration) /p:RevitVersion=$(revitVersion)
+  condition: eq(variables['projectType'], 'modern')
+  displayName: 'Build xUnitRevit.Modern for Revit $(revitVersion)'
 
-- task: NuGetCommand@2
-  inputs:
-    command: 'pack'
-    packagesToPack: '**/xUnitRevitUtils*.csproj'
-    versioningScheme: 'off'
+# Pack xUnitRevitUtils for each version
+- script: dotnet pack xUnitRevitUtils/xUnitRevitUtils.csproj -c Release /p:RevitVersion=$(revitVersion)
+  displayName: 'Pack xUnitRevitUtils.$(revitVersion)'
+
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: 'artifact'
+    ArtifactName: 'artifact-$(revitVersion)'
     publishLocation: 'Container'
 
 - powershell: |
