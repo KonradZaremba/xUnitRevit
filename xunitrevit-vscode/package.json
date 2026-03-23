@@ -1,0 +1,61 @@
+{
+  "name": "xunitrevit",
+  "displayName": "xUnitRevit Test Explorer",
+  "description": "Run xUnit tests inside Autodesk Revit from VS Code. Discovers tests, launches Revit in headless mode, and displays results in Test Explorer.",
+  "version": "0.1.0",
+  "publisher": "designboticteam",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Testing"],
+  "activationEvents": [
+    "workspaceContains:**/*.csproj"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "xUnitRevit",
+      "properties": {
+        "xunitRevit.revitVersion": {
+          "type": "string",
+          "default": "2026",
+          "enum": ["2025", "2026", "2027"],
+          "description": "Revit version to use for test execution."
+        },
+        "xunitRevit.timeout": {
+          "type": "number",
+          "default": 600,
+          "description": "Maximum seconds to wait for Revit to complete tests."
+        },
+        "xunitRevit.testScriptPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to run-revit-tests.ps1. If empty, searches the workspace root."
+        },
+        "xunitRevit.sshTarget": {
+          "type": "string",
+          "default": "",
+          "description": "SSH target (user@host) for remote Revit execution. Empty = local."
+        },
+        "xunitRevit.skipBuild": {
+          "type": "boolean",
+          "default": false,
+          "description": "Skip build step and use already-deployed DLLs."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^4.3.0"
+  }
+}
