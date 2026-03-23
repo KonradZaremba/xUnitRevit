@@ -23,10 +23,10 @@
 
         <!-- Status bar -->
         <TextBlock Grid.Row="1" Margin="0,0,0,5">
-            <Run Text="Tests: "/><Run Text="{Binding TotalCount}"/>
-            <Run Text=" | Passed: "/><Run Text="{Binding PassedCount}" Foreground="Green"/>
-            <Run Text=" | Failed: "/><Run Text="{Binding FailedCount}" Foreground="Red"/>
-            <Run Text=" | Skipped: "/><Run Text="{Binding SkippedCount}" Foreground="Orange"/>
+            <Run Text="Tests: "/><Run Text="{Binding TotalCount, Mode=OneWay}"/>
+            <Run Text=" | Passed: "/><Run Text="{Binding PassedCount, Mode=OneWay}" Foreground="Green"/>
+            <Run Text=" | Failed: "/><Run Text="{Binding FailedCount, Mode=OneWay}" Foreground="Red"/>
+            <Run Text=" | Skipped: "/><Run Text="{Binding SkippedCount, Mode=OneWay}" Foreground="Orange"/>
         </TextBlock>
 
         <!-- Test list -->
@@ -47,5 +47,10 @@
         <!-- Progress -->
         <ProgressBar Grid.Row="3" Height="4" Margin="0,5,0,0"
                      IsIndeterminate="{Binding IsRunning}"/>
+
+        <!-- Watch status -->
+        <TextBlock Grid.Row="3" Margin="0,12,5,0" HorizontalAlignment="Right"
+                   FontSize="10" Foreground="Gray"
+                   Text="{Binding WatchStatus}"/>
     </Grid>
 </Window>

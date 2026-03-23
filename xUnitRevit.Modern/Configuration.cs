@@ -25,5 +25,11 @@ namespace xUnitRevit
     /// Path where test results will be written.
     /// </summary>
     public string resultPath { get; set; } = "./TestResults.xml";
+
+    /// <summary>
+    /// When true, automatically closes Revit after headless tests complete.
+    /// Enables fully automated CI/CD runs.
+    /// </summary>
+    public bool exitAfterTests { get; set; } = false;
   }
 }

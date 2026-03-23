@@ -17,12 +17,4 @@
     <VendorId>speckle</VendorId>
     <VendorDescription>Speckle</VendorDescription>
   </AddIn>
-  <AddIn Type="DBApplication">
-    <Name>xUnitRevit Headless</Name>
-    <Assembly>xUnitRevit\xUnitRevit.dll</Assembly>
-    <FullClassName>xUnitRevit.HeadlessApp</FullClassName>
-    <ClientId>b3f7a1c2-4d5e-6f78-9012-abcdef345678</ClientId>
-    <VendorId>speckle</VendorId>
-    <VendorDescription>Speckle</VendorDescription>
-  </AddIn>
 </RevitAddIns>

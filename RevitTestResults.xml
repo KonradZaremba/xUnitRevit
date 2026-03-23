@@ -1,31 +1,21 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<testsuites tests="49" failures="14" skipped="1" time="4.269">
-  <testsuite name="SampleLibrary.Modern.ConfigurationTests" tests="3" failures="0" skipped="0" time="0.187" timestamp="2026-03-22T17:14:32.5092973Z">
-    <testcase name="SampleLibrary.Modern.ConfigurationTests.PartialJsonUsesDefaults" classname="SampleLibrary.Modern.ConfigurationTests" time="0.182" />
-    <testcase name="SampleLibrary.Modern.ConfigurationTests.DefaultValuesAreCorrect" classname="SampleLibrary.Modern.ConfigurationTests" time="0.005" />
-    <testcase name="SampleLibrary.Modern.ConfigurationTests.CanDeserializeFromJson" classname="SampleLibrary.Modern.ConfigurationTests" time="0.000" />
+<testsuites tests="49" failures="1" skipped="1" time="1.012">
+  <testsuite name="SampleLibrary.Modern.ElementCollectorTests" tests="5" failures="0" skipped="0" time="0.170" timestamp="2026-03-23T13:09:21.5807751Z">
+    <testcase name="SampleLibrary.Modern.ElementCollectorTests.WallsHaveValidVolume" classname="SampleLibrary.Modern.ElementCollectorTests" time="0.167" />
+    <testcase name="SampleLibrary.Modern.ElementCollectorTests.CollectLevels" classname="SampleLibrary.Modern.ElementCollectorTests" time="0.000" />
+    <testcase name="SampleLibrary.Modern.ElementCollectorTests.CollectViewsInDocument" classname="SampleLibrary.Modern.ElementCollectorTests" time="0.000" />
+    <testcase name="SampleLibrary.Modern.ElementCollectorTests.CollectAllWalls" classname="SampleLibrary.Modern.ElementCollectorTests" time="0.001" />
+    <testcase name="SampleLibrary.Modern.ElementCollectorTests.CollectWallTypes" classname="SampleLibrary.Modern.ElementCollectorTests" time="0.001" />
   </testsuite>
-  <testsuite name="SampleLibrary.Modern.GeometryTests" tests="3" failures="0" skipped="0" time="0.183" timestamp="2026-03-22T17:14:32.5093157Z">
-    <testcase name="SampleLibrary.Modern.GeometryTests.PointDistanceCalculation" classname="SampleLibrary.Modern.GeometryTests" time="0.182" />
-    <testcase name="SampleLibrary.Modern.GeometryTests.VolumeCalculation" classname="SampleLibrary.Modern.GeometryTests" time="0.001" />
-    <testcase name="SampleLibrary.Modern.GeometryTests.AreaCalculation" classname="SampleLibrary.Modern.GeometryTests" time="0.000" />
-  </testsuite>
-  <testsuite name="SampleLibrary.Modern.TestResultModelTests" tests="5" failures="0" skipped="0" time="0.182" timestamp="2026-03-22T17:14:32.5093319Z">
-    <testcase name="SampleLibrary.Modern.TestResultModelTests.AllOutcomesAreValid(outcome: Passed)" classname="SampleLibrary.Modern.TestResultModelTests" time="0.181" />
-    <testcase name="SampleLibrary.Modern.TestResultModelTests.AllOutcomesAreValid(outcome: Failed)" classname="SampleLibrary.Modern.TestResultModelTests" time="0.000" />
-    <testcase name="SampleLibrary.Modern.TestResultModelTests.AllOutcomesAreValid(outcome: Skipped)" classname="SampleLibrary.Modern.TestResultModelTests" time="0.000" />
-    <testcase name="SampleLibrary.Modern.TestResultModelTests.AllPropertiesRoundTrip" classname="SampleLibrary.Modern.TestResultModelTests" time="0.000" />
-    <testcase name="SampleLibrary.Modern.TestResultModelTests.DefaultOutcomeIsPassed" classname="SampleLibrary.Modern.TestResultModelTests" time="0.000" />
-  </testsuite>
-  <testsuite name="SampleLibrary.Modern.BasicTests" tests="8" failures="1" skipped="1" time="0.188" timestamp="2026-03-22T17:14:32.5093516Z">
-    <testcase name="SampleLibrary.Modern.BasicTests.StringContains" classname="SampleLibrary.Modern.BasicTests" time="0.180" />
-    <testcase name="SampleLibrary.Modern.BasicTests.MillimetersToFeetConversion(mm: 914,39999999999998, expectedFeet: 3)" classname="SampleLibrary.Modern.BasicTests" time="0.001" />
+  <testsuite name="SampleLibrary.Modern.BasicTests" tests="8" failures="1" skipped="1" time="0.172" timestamp="2026-03-23T13:09:21.5807959Z">
+    <testcase name="SampleLibrary.Modern.BasicTests.StringContains" classname="SampleLibrary.Modern.BasicTests" time="0.167" />
+    <testcase name="SampleLibrary.Modern.BasicTests.MillimetersToFeetConversion(mm: 914,39999999999998, expectedFeet: 3)" classname="SampleLibrary.Modern.BasicTests" time="0.000" />
     <testcase name="SampleLibrary.Modern.BasicTests.MillimetersToFeetConversion(mm: 304,80000000000001, expectedFeet: 1)" classname="SampleLibrary.Modern.BasicTests" time="0.000" />
     <testcase name="SampleLibrary.Modern.BasicTests.MillimetersToFeetConversion(mm: 609,60000000000002, expectedFeet: 2)" classname="SampleLibrary.Modern.BasicTests" time="0.000" />
     <testcase name="SampleLibrary.Modern.BasicTests.SkippedTest" classname="SampleLibrary.Modern.BasicTests" time="0.000">
       <skipped message="Skipped to verify skip reporting" />
     </testcase>
-    <testcase name="SampleLibrary.Modern.BasicTests.IntentionalFailure" classname="SampleLibrary.Modern.BasicTests" time="0.007">
+    <testcase name="SampleLibrary.Modern.BasicTests.IntentionalFailure" classname="SampleLibrary.Modern.BasicTests" time="0.004">
       <failure message="Assert.Equal() Failure: Values differ&#xD;&#xA;Expected: 42&#xD;&#xA;Actual:   54">   at Xunit.Assert.Equal[T](T expected, T actual, IEqualityComparer`1 comparer) in /_/src/xunit.assert/Asserts/EqualityAsserts.cs:line 154
    at Xunit.Assert.Equal[T](T expected, T actual) in /_/src/xunit.assert/Asserts/EqualityAsserts.cs:line 89
    at SampleLibrary.Modern.BasicTests.IntentionalFailure()
@@ -35,124 +25,56 @@
     <testcase name="SampleLibrary.Modern.BasicTests.SimpleAddition" classname="SampleLibrary.Modern.BasicTests" time="0.000" />
     <testcase name="SampleLibrary.Modern.BasicTests.ListHasExpectedCount" classname="SampleLibrary.Modern.BasicTests" time="0.000" />
   </testsuite>
-  <testsuite name="SampleLibrary.Modern.UnitConversionTests" tests="8" failures="0" skipped="0" time="0.189" timestamp="2026-03-22T17:14:32.5093919Z">
-    <testcase name="SampleLibrary.Modern.UnitConversionTests.MillimetersToFeetConversion(mm: 2000, expectedFeet: 6,56168)" classname="SampleLibrary.Modern.UnitConversionTests" time="0.183" />
+  <testsuite name="SampleLibrary.Modern.TransactionTests" tests="3" failures="0" skipped="0" time="0.168" timestamp="2026-03-23T13:09:21.5808329Z">
+    <testcase name="SampleLibrary.Modern.TransactionTests.RunInTransactionHelper" classname="SampleLibrary.Modern.TransactionTests" time="0.167" />
+    <testcase name="SampleLibrary.Modern.TransactionTests.CreateAndDeleteWall" classname="SampleLibrary.Modern.TransactionTests" time="0.000" />
+    <testcase name="SampleLibrary.Modern.TransactionTests.ModifyWallParameterAndRollBack" classname="SampleLibrary.Modern.TransactionTests" time="0.000" />
+  </testsuite>
+  <testsuite name="SampleLibrary.Modern.GeometryExtractionTests" tests="3" failures="0" skipped="0" time="0.168" timestamp="2026-03-23T13:09:21.5808403Z">
+    <testcase name="SampleLibrary.Modern.GeometryExtractionTests.WallBoundingBoxIsValid" classname="SampleLibrary.Modern.GeometryExtractionTests" time="0.167" />
+    <testcase name="SampleLibrary.Modern.GeometryExtractionTests.WallLocationIsLine" classname="SampleLibrary.Modern.GeometryExtractionTests" time="0.000" />
+    <testcase name="SampleLibrary.Modern.GeometryExtractionTests.WallHasSolid" classname="SampleLibrary.Modern.GeometryExtractionTests" time="0.000" />
+  </testsuite>
+  <testsuite name="SampleLibrary.Modern.ConfigurationTests" tests="3" failures="0" skipped="0" time="0.171" timestamp="2026-03-23T13:09:21.5808475Z">
+    <testcase name="SampleLibrary.Modern.ConfigurationTests.PartialJsonUsesDefaults" classname="SampleLibrary.Modern.ConfigurationTests" time="0.167" />
+    <testcase name="SampleLibrary.Modern.ConfigurationTests.DefaultValuesAreCorrect" classname="SampleLibrary.Modern.ConfigurationTests" time="0.003" />
+    <testcase name="SampleLibrary.Modern.ConfigurationTests.CanDeserializeFromJson" classname="SampleLibrary.Modern.ConfigurationTests" time="0.001" />
+  </testsuite>
+  <testsuite name="SampleLibrary.Modern.RevitDocumentTests" tests="3" failures="0" skipped="0" time="0.167" timestamp="2026-03-23T13:09:21.5808549Z">
+    <testcase name="SampleLibrary.Modern.RevitDocumentTests.CanOpenDocument" classname="SampleLibrary.Modern.RevitDocumentTests" time="0.167" />
+    <testcase name="SampleLibrary.Modern.RevitDocumentTests.DocumentHasActiveView" classname="SampleLibrary.Modern.RevitDocumentTests" time="0.000" />
+    <testcase name="SampleLibrary.Modern.RevitDocumentTests.ApplicationIsInitialized" classname="SampleLibrary.Modern.RevitDocumentTests" time="0.000" />
+  </testsuite>
+  <testsuite name="SampleLibrary.Modern.TestResultModelTests" tests="5" failures="0" skipped="0" time="0.170" timestamp="2026-03-23T13:09:21.5808623Z">
+    <testcase name="SampleLibrary.Modern.TestResultModelTests.AllOutcomesAreValid(outcome: Passed)" classname="SampleLibrary.Modern.TestResultModelTests" time="0.169" />
+    <testcase name="SampleLibrary.Modern.TestResultModelTests.AllOutcomesAreValid(outcome: Failed)" classname="SampleLibrary.Modern.TestResultModelTests" time="0.000" />
+    <testcase name="SampleLibrary.Modern.TestResultModelTests.AllOutcomesAreValid(outcome: Skipped)" classname="SampleLibrary.Modern.TestResultModelTests" time="0.000" />
+    <testcase name="SampleLibrary.Modern.TestResultModelTests.AllPropertiesRoundTrip" classname="SampleLibrary.Modern.TestResultModelTests" time="0.000" />
+    <testcase name="SampleLibrary.Modern.TestResultModelTests.DefaultOutcomeIsPassed" classname="SampleLibrary.Modern.TestResultModelTests" time="0.000" />
+  </testsuite>
+  <testsuite name="SampleLibrary.Modern.GeometryTests" tests="3" failures="0" skipped="0" time="0.170" timestamp="2026-03-23T13:09:21.5809853Z">
+    <testcase name="SampleLibrary.Modern.GeometryTests.PointDistanceCalculation" classname="SampleLibrary.Modern.GeometryTests" time="0.169" />
+    <testcase name="SampleLibrary.Modern.GeometryTests.VolumeCalculation" classname="SampleLibrary.Modern.GeometryTests" time="0.000" />
+    <testcase name="SampleLibrary.Modern.GeometryTests.AreaCalculation" classname="SampleLibrary.Modern.GeometryTests" time="0.000" />
+  </testsuite>
+  <testsuite name="SampleLibrary.Modern.UnitConversionTests" tests="8" failures="0" skipped="0" time="0.175" timestamp="2026-03-23T13:09:21.5809966Z">
+    <testcase name="SampleLibrary.Modern.UnitConversionTests.MillimetersToFeetConversion(mm: 2000, expectedFeet: 6,56168)" classname="SampleLibrary.Modern.UnitConversionTests" time="0.171" />
     <testcase name="SampleLibrary.Modern.UnitConversionTests.MillimetersToFeetConversion(mm: 1000, expectedFeet: 3,28084)" classname="SampleLibrary.Modern.UnitConversionTests" time="0.000" />
     <testcase name="SampleLibrary.Modern.UnitConversionTests.MillimetersToFeetConversion(mm: 3000, expectedFeet: 9,8425200000000004)" classname="SampleLibrary.Modern.UnitConversionTests" time="0.000" />
-    <testcase name="SampleLibrary.Modern.UnitConversionTests.SquareMetersConversion" classname="SampleLibrary.Modern.UnitConversionTests" time="0.003" />
+    <testcase name="SampleLibrary.Modern.UnitConversionTests.SquareMetersConversion" classname="SampleLibrary.Modern.UnitConversionTests" time="0.002" />
     <testcase name="SampleLibrary.Modern.UnitConversionTests.FeetToMillimetersConversion(feet: 10, expectedMm: 3048)" classname="SampleLibrary.Modern.UnitConversionTests" time="0.000" />
     <testcase name="SampleLibrary.Modern.UnitConversionTests.FeetToMillimetersConversion(feet: 2, expectedMm: 609,60000000000002)" classname="SampleLibrary.Modern.UnitConversionTests" time="0.000" />
     <testcase name="SampleLibrary.Modern.UnitConversionTests.FeetToMillimetersConversion(feet: 1, expectedMm: 304,80000000000001)" classname="SampleLibrary.Modern.UnitConversionTests" time="0.000" />
-    <testcase name="SampleLibrary.Modern.UnitConversionTests.CubicMetersConversion" classname="SampleLibrary.Modern.UnitConversionTests" time="0.002" />
+    <testcase name="SampleLibrary.Modern.UnitConversionTests.CubicMetersConversion" classname="SampleLibrary.Modern.UnitConversionTests" time="0.001" />
   </testsuite>
-  <testsuite name="SampleLibrary.Modern.TestResultWriterTests" tests="8" failures="0" skipped="0" time="0.323" timestamp="2026-03-22T17:14:32.5095453Z">
-    <testcase name="SampleLibrary.Modern.TestResultWriterTests.SkippedElementContainsReason" classname="SampleLibrary.Modern.TestResultWriterTests" time="0.204" />
+  <testsuite name="SampleLibrary.Modern.TestResultWriterTests" tests="8" failures="0" skipped="0" time="0.290" timestamp="2026-03-23T13:09:21.5810154Z">
+    <testcase name="SampleLibrary.Modern.TestResultWriterTests.SkippedElementContainsReason" classname="SampleLibrary.Modern.TestResultWriterTests" time="0.191" />
     <testcase name="SampleLibrary.Modern.TestResultWriterTests.CreatesOutputDirectoryIfMissing" classname="SampleLibrary.Modern.TestResultWriterTests" time="0.003" />
-    <testcase name="SampleLibrary.Modern.TestResultWriterTests.GroupsResultsByClassName" classname="SampleLibrary.Modern.TestResultWriterTests" time="0.017" />
-    <testcase name="SampleLibrary.Modern.TestResultWriterTests.FailureElementContainsMessageAndStackTrace" classname="SampleLibrary.Modern.TestResultWriterTests" time="0.018" />
-    <testcase name="SampleLibrary.Modern.TestResultWriterTests.NullClassNameDefaultsToUnknown" classname="SampleLibrary.Modern.TestResultWriterTests" time="0.025" />
+    <testcase name="SampleLibrary.Modern.TestResultWriterTests.GroupsResultsByClassName" classname="SampleLibrary.Modern.TestResultWriterTests" time="0.016" />
+    <testcase name="SampleLibrary.Modern.TestResultWriterTests.FailureElementContainsMessageAndStackTrace" classname="SampleLibrary.Modern.TestResultWriterTests" time="0.017" />
+    <testcase name="SampleLibrary.Modern.TestResultWriterTests.NullClassNameDefaultsToUnknown" classname="SampleLibrary.Modern.TestResultWriterTests" time="0.018" />
     <testcase name="SampleLibrary.Modern.TestResultWriterTests.HandlesEmptyResultList" classname="SampleLibrary.Modern.TestResultWriterTests" time="0.018" />
-    <testcase name="SampleLibrary.Modern.TestResultWriterTests.WritesValidJUnitXml" classname="SampleLibrary.Modern.TestResultWriterTests" time="0.017" />
-    <testcase name="SampleLibrary.Modern.TestResultWriterTests.CorrectlyCountsPassFailSkip" classname="SampleLibrary.Modern.TestResultWriterTests" time="0.020" />
-  </testsuite>
-  <testsuite name="SampleLibrary.Modern.TransactionTests" tests="3" failures="3" skipped="0" time="4.089" timestamp="2026-03-22T17:14:32.5095699Z">
-    <testcase name="SampleLibrary.Modern.TransactionTests.RunInTransactionHelper" classname="SampleLibrary.Modern.TransactionTests" time="4.087">
-      <failure message="The filePath:C:\Users\konra\source\TestModels\walls.rvt to be opened doesn't exist.">   at Autodesk.Revit.ApplicationServices.Application.OpenDocumentFile(String fileName)
-   at xUnitRevitUtils.xru.OpenDoc(String filePath) in C:\Users\konra\source\repos\xUnitRevitFork\xUnitRevitUtils\xru.cs:line 83
-   at SampleLibrary.Modern.TransactionTests.RunInTransactionHelper()
-   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
-   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
-    </testcase>
-    <testcase name="SampleLibrary.Modern.TransactionTests.CreateAndDeleteWall" classname="SampleLibrary.Modern.TransactionTests" time="0.001">
-      <failure message="The filePath:C:\Users\konra\source\TestModels\walls.rvt to be opened doesn't exist.">   at Autodesk.Revit.ApplicationServices.Application.OpenDocumentFile(String fileName)
-   at xUnitRevitUtils.xru.OpenDoc(String filePath) in C:\Users\konra\source\repos\xUnitRevitFork\xUnitRevitUtils\xru.cs:line 83
-   at SampleLibrary.Modern.TransactionTests.CreateAndDeleteWall()
-   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
-   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
-    </testcase>
-    <testcase name="SampleLibrary.Modern.TransactionTests.ModifyWallParameterAndRollBack" classname="SampleLibrary.Modern.TransactionTests" time="0.001">
-      <failure message="The filePath:C:\Users\konra\source\TestModels\walls.rvt to be opened doesn't exist.">   at Autodesk.Revit.ApplicationServices.Application.OpenDocumentFile(String fileName)
-   at xUnitRevitUtils.xru.OpenDoc(String filePath) in C:\Users\konra\source\repos\xUnitRevitFork\xUnitRevitUtils\xru.cs:line 83
-   at SampleLibrary.Modern.TransactionTests.ModifyWallParameterAndRollBack()
-   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
-   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
-    </testcase>
-  </testsuite>
-  <testsuite name="SampleLibrary.Modern.ElementCollectorTests" tests="5" failures="5" skipped="0" time="4.090" timestamp="2026-03-22T17:14:32.5096044Z">
-    <testcase name="SampleLibrary.Modern.ElementCollectorTests.WallsHaveValidVolume" classname="SampleLibrary.Modern.ElementCollectorTests" time="4.087">
-      <failure message="The filePath:C:\Users\konra\source\TestModels\walls.rvt to be opened doesn't exist.">   at Autodesk.Revit.ApplicationServices.Application.OpenDocumentFile(String fileName)
-   at xUnitRevitUtils.xru.OpenDoc(String filePath) in C:\Users\konra\source\repos\xUnitRevitFork\xUnitRevitUtils\xru.cs:line 83
-   at SampleLibrary.Modern.ElementCollectorTests.WallsHaveValidVolume()
-   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
-   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
-    </testcase>
-    <testcase name="SampleLibrary.Modern.ElementCollectorTests.CollectLevels" classname="SampleLibrary.Modern.ElementCollectorTests" time="0.001">
-      <failure message="The filePath:C:\Users\konra\source\TestModels\walls.rvt to be opened doesn't exist.">   at Autodesk.Revit.ApplicationServices.Application.OpenDocumentFile(String fileName)
-   at xUnitRevitUtils.xru.OpenDoc(String filePath) in C:\Users\konra\source\repos\xUnitRevitFork\xUnitRevitUtils\xru.cs:line 83
-   at SampleLibrary.Modern.ElementCollectorTests.CollectLevels()
-   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
-   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
-    </testcase>
-    <testcase name="SampleLibrary.Modern.ElementCollectorTests.CollectViewsInDocument" classname="SampleLibrary.Modern.ElementCollectorTests" time="0.001">
-      <failure message="The filePath:C:\Users\konra\source\TestModels\walls.rvt to be opened doesn't exist.">   at Autodesk.Revit.ApplicationServices.Application.OpenDocumentFile(String fileName)
-   at xUnitRevitUtils.xru.OpenDoc(String filePath) in C:\Users\konra\source\repos\xUnitRevitFork\xUnitRevitUtils\xru.cs:line 83
-   at SampleLibrary.Modern.ElementCollectorTests.CollectViewsInDocument()
-   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
-   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
-    </testcase>
-    <testcase name="SampleLibrary.Modern.ElementCollectorTests.CollectAllWalls" classname="SampleLibrary.Modern.ElementCollectorTests" time="0.000">
-      <failure message="The filePath:C:\Users\konra\source\TestModels\walls.rvt to be opened doesn't exist.">   at Autodesk.Revit.ApplicationServices.Application.OpenDocumentFile(String fileName)
-   at xUnitRevitUtils.xru.OpenDoc(String filePath) in C:\Users\konra\source\repos\xUnitRevitFork\xUnitRevitUtils\xru.cs:line 83
-   at SampleLibrary.Modern.ElementCollectorTests.CollectAllWalls()
-   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
-   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
-    </testcase>
-    <testcase name="SampleLibrary.Modern.ElementCollectorTests.CollectWallTypes" classname="SampleLibrary.Modern.ElementCollectorTests" time="0.001">
-      <failure message="The filePath:C:\Users\konra\source\TestModels\walls.rvt to be opened doesn't exist.">   at Autodesk.Revit.ApplicationServices.Application.OpenDocumentFile(String fileName)
-   at xUnitRevitUtils.xru.OpenDoc(String filePath) in C:\Users\konra\source\repos\xUnitRevitFork\xUnitRevitUtils\xru.cs:line 83
-   at SampleLibrary.Modern.ElementCollectorTests.CollectWallTypes()
-   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
-   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
-    </testcase>
-  </testsuite>
-  <testsuite name="SampleLibrary.Modern.GeometryExtractionTests" tests="3" failures="3" skipped="0" time="4.088" timestamp="2026-03-22T17:14:32.5097026Z">
-    <testcase name="SampleLibrary.Modern.GeometryExtractionTests.WallBoundingBoxIsValid" classname="SampleLibrary.Modern.GeometryExtractionTests" time="4.087">
-      <failure message="The filePath:C:\Users\konra\source\TestModels\walls.rvt to be opened doesn't exist.">   at Autodesk.Revit.ApplicationServices.Application.OpenDocumentFile(String fileName)
-   at xUnitRevitUtils.xru.OpenDoc(String filePath) in C:\Users\konra\source\repos\xUnitRevitFork\xUnitRevitUtils\xru.cs:line 83
-   at SampleLibrary.Modern.GeometryExtractionTests.WallBoundingBoxIsValid()
-   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
-   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
-    </testcase>
-    <testcase name="SampleLibrary.Modern.GeometryExtractionTests.WallLocationIsLine" classname="SampleLibrary.Modern.GeometryExtractionTests" time="0.001">
-      <failure message="The filePath:C:\Users\konra\source\TestModels\walls.rvt to be opened doesn't exist.">   at Autodesk.Revit.ApplicationServices.Application.OpenDocumentFile(String fileName)
-   at xUnitRevitUtils.xru.OpenDoc(String filePath) in C:\Users\konra\source\repos\xUnitRevitFork\xUnitRevitUtils\xru.cs:line 83
-   at SampleLibrary.Modern.GeometryExtractionTests.WallLocationIsLine()
-   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
-   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
-    </testcase>
-    <testcase name="SampleLibrary.Modern.GeometryExtractionTests.WallHasSolid" classname="SampleLibrary.Modern.GeometryExtractionTests" time="0.001">
-      <failure message="The filePath:C:\Users\konra\source\TestModels\walls.rvt to be opened doesn't exist.">   at Autodesk.Revit.ApplicationServices.Application.OpenDocumentFile(String fileName)
-   at xUnitRevitUtils.xru.OpenDoc(String filePath) in C:\Users\konra\source\repos\xUnitRevitFork\xUnitRevitUtils\xru.cs:line 83
-   at SampleLibrary.Modern.GeometryExtractionTests.WallHasSolid()
-   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
-   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
-    </testcase>
-  </testsuite>
-  <testsuite name="SampleLibrary.Modern.RevitDocumentTests" tests="3" failures="2" skipped="0" time="4.088" timestamp="2026-03-22T17:14:32.5097375Z">
-    <testcase name="SampleLibrary.Modern.RevitDocumentTests.CanOpenDocument" classname="SampleLibrary.Modern.RevitDocumentTests" time="4.087">
-      <failure message="The filePath:C:\Users\konra\source\TestModels\walls.rvt to be opened doesn't exist.">   at Autodesk.Revit.ApplicationServices.Application.OpenDocumentFile(String fileName)
-   at xUnitRevitUtils.xru.OpenDoc(String filePath) in C:\Users\konra\source\repos\xUnitRevitFork\xUnitRevitUtils\xru.cs:line 83
-   at SampleLibrary.Modern.RevitDocumentTests.CanOpenDocument()
-   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
-   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
-    </testcase>
-    <testcase name="SampleLibrary.Modern.RevitDocumentTests.DocumentHasActiveView" classname="SampleLibrary.Modern.RevitDocumentTests" time="0.001">
-      <failure message="The filePath:C:\Users\konra\source\TestModels\walls.rvt to be opened doesn't exist.">   at Autodesk.Revit.ApplicationServices.Application.OpenDocumentFile(String fileName)
-   at xUnitRevitUtils.xru.OpenDoc(String filePath) in C:\Users\konra\source\repos\xUnitRevitFork\xUnitRevitUtils\xru.cs:line 83
-   at SampleLibrary.Modern.RevitDocumentTests.DocumentHasActiveView()
-   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
-   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</failure>
-    </testcase>
-    <testcase name="SampleLibrary.Modern.RevitDocumentTests.ApplicationIsInitialized" classname="SampleLibrary.Modern.RevitDocumentTests" time="0.000" />
+    <testcase name="SampleLibrary.Modern.TestResultWriterTests.WritesValidJUnitXml" classname="SampleLibrary.Modern.TestResultWriterTests" time="0.015" />
+    <testcase name="SampleLibrary.Modern.TestResultWriterTests.CorrectlyCountsPassFailSkip" classname="SampleLibrary.Modern.TestResultWriterTests" time="0.012" />
   </testsuite>
 </testsuites>

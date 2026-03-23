@@ -21,27 +21,39 @@ namespace xUnitRevit
     {
       try
       {
+        App.Log("Runner.Launch: creating ExternalEvent...");
         var queue = new List<Action>();
         var eventHandler = ExternalEvent.Create(new ExternalEventHandler(queue));
 
+        App.Log("Runner.Launch: initializing xru...");
         xru.Initialize(uiapp, SynchronizationContext.Current, eventHandler, queue);
 
+        App.Log("Runner.Launch: creating TestRunnerWindow...");
         var main = new TestRunnerWindow();
         main.Title = "xUnit Revit by Speckle";
         main.MaxHeight = 800;
 
-        // Pre-load assemblies from config
         if (Config.startupAssemblies != null && Config.startupAssemblies.Count > 0)
         {
+          App.Log($"Runner.Launch: loading {Config.startupAssemblies.Count} startup assemblies...");
           main.SetStartupAssemblies(Config.startupAssemblies);
+          App.Log("Runner.Launch: assemblies loaded");
         }
 
+        App.Log("Runner.Launch: showing window...");
         main.Show();
+
+        if (Config.startupAssemblies != null && Config.startupAssemblies.Count > 0)
+        {
+          main.StartWatching(Config.startupAssemblies);
+          App.Log("Runner.Launch: file watcher started");
+        }
+
+        App.Log("Runner.Launch: done");
       }
       catch (Exception e)
       {
-        // Log to debug output rather than silently swallowing
-        System.Diagnostics.Debug.WriteLine($"xUnitRevit Runner.Launch failed: {e}");
+        App.Log($"Runner.Launch ERROR: {e}");
       }
     }
 

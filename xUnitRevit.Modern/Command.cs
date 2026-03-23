@@ -13,9 +13,22 @@ namespace xUnitRevit
       ref string message,
       ElementSet elements)
     {
-      UIApplication uiapp = commandData.Application;
-      Runner.Launch(uiapp);
-      return Result.Succeeded;
+      App.Log("Command.Execute called");
+      try
+      {
+        UIApplication uiapp = commandData.Application;
+        App.Log("Calling Runner.Launch from Command...");
+        Runner.ReadConfig();
+        Runner.Launch(uiapp);
+        App.Log("Runner.Launch from Command completed OK");
+        return Result.Succeeded;
+      }
+      catch (System.Exception ex)
+      {
+        App.Log($"Command ERROR: {ex}");
+        message = ex.Message;
+        return Result.Failed;
+      }
     }
   }
 }

@@ -20,6 +20,57 @@ namespace xUnitRevit
   {
     private static bool _resolverRegistered;
     private static string _logPath;
+    private static volatile bool _testsComplete;
+    private static bool _exitAfterTests;
+    private static string _capturedResultPath;
+
+    /// <summary>
+    /// Called by Revit's Idling event on the main thread.
+    /// Processes Revit API work items dispatched from test background threads.
+    /// </summary>
+    public static void OnIdling(object sender, Autodesk.Revit.UI.Events.IdlingEventArgs e)
+    {
+      // Process all pending work items on the main thread
+      while (xru.HeadlessWorkQueue.TryTake(out var item))
+      {
+        var (work, done, error) = item;
+        try
+        {
+          work();
+        }
+        catch (Exception ex)
+        {
+          error[0] = ex;
+        }
+        finally
+        {
+          done.Set();
+        }
+      }
+
+      if (_testsComplete)
+      {
+        // Unregister idling handler
+        if (sender is Autodesk.Revit.UI.UIApplication uiapp)
+          uiapp.Idling -= OnIdling;
+
+        if (_exitAfterTests)
+        {
+          Log("exitAfterTests=true - signaling completion. External runner will close Revit.");
+          try
+          {
+            var sentinel = Path.ChangeExtension(_capturedResultPath, ".done");
+            File.WriteAllText(sentinel, DateTime.Now.ToString("o"));
+          }
+          catch { }
+        }
+      }
+      else
+      {
+        // Request another Idling callback soon
+        e.SetRaiseWithoutDelay();
+      }
+    }
 
     internal static void Log(string message)
     {
@@ -56,10 +107,12 @@ namespace xUnitRevit
       xru.InitializeHeadless(app);
       Log("xru initialized in headless mode");
 
-      // Run tests on a background thread so we don't block Revit's main thread.
-      // Tests that need the Revit thread (transactions, doc operations) use xru helpers
-      // which dispatch back to the main thread when needed.
+      // Tests run on a background thread (xUnit needs its own threads).
+      // Revit API document tests skip in headless mode (no UI thread dispatch available).
+      // Unit conversion tests work because UnitUtils is thread-safe.
       var capturedResultPath = resultPath;
+      var exitAfterTests = config.exitAfterTests;
+
       System.Threading.Tasks.Task.Run(() =>
       {
         try
@@ -69,6 +122,34 @@ namespace xUnitRevit
         catch (Exception ex)
         {
           Log($"FATAL ERROR: {ex}");
+          try
+          {
+            WriteResults(new List<TestResult>
+            {
+              new TestResult
+              {
+                TestName = "FATAL",
+                ClassName = "HeadlessRunner",
+                Outcome = TestOutcome.Failed,
+                ErrorMessage = ex.Message,
+                ErrorStackTrace = ex.StackTrace
+              }
+            }, capturedResultPath, TimeSpan.Zero);
+          }
+          catch { }
+        }
+        finally
+        {
+          if (exitAfterTests)
+          {
+            Log("exitAfterTests=true - signaling completion.");
+            try
+            {
+              var sentinel = Path.ChangeExtension(capturedResultPath, ".done");
+              File.WriteAllText(sentinel, DateTime.Now.ToString("o"));
+            }
+            catch { }
+          }
         }
       });
     }
@@ -90,14 +171,40 @@ namespace xUnitRevit
         RegisterAssemblyResolver(Path.GetDirectoryName(assemblyPath));
 
         Log($"Running tests in: {assemblyPath}");
-        var results = RunAssembly(assemblyPath);
-        allResults.AddRange(results);
+        try
+        {
+          var results = RunAssembly(assemblyPath);
+          allResults.AddRange(results);
+        }
+        catch (Exception ex)
+        {
+          Log($"ERROR running assembly {assemblyPath}: {ex.Message}");
+          allResults.Add(new TestResult
+          {
+            TestName = $"Assembly: {Path.GetFileName(assemblyPath)}",
+            AssemblyName = assemblyPath,
+            Outcome = TestOutcome.Failed,
+            ErrorMessage = ex.Message,
+            ErrorStackTrace = ex.StackTrace
+          });
+        }
       }
 
       stopwatch.Stop();
+      WriteResults(allResults, resultPath, stopwatch.Elapsed);
+    }
 
-      // Write JUnit XML results
-      TestResultWriter.WriteJUnitXml(allResults, resultPath, stopwatch.Elapsed);
+    private static void WriteResults(List<TestResult> allResults, string resultPath, TimeSpan elapsed)
+    {
+      try
+      {
+        // Write JUnit XML results
+        TestResultWriter.WriteJUnitXml(allResults, resultPath, elapsed);
+      }
+      catch (Exception ex)
+      {
+        Log($"ERROR writing XML results: {ex.Message}");
+      }
 
       // Summary
       var passed = allResults.Count(r => r.Outcome == TestOutcome.Passed);
@@ -105,7 +212,7 @@ namespace xUnitRevit
       var skipped = allResults.Count(r => r.Outcome == TestOutcome.Skipped);
 
       Log($"");
-      Log($"=== RESULTS: {passed} passed, {failed} failed, {skipped} skipped ({stopwatch.Elapsed.TotalSeconds:F2}s) ===");
+      Log($"=== RESULTS: {passed} passed, {failed} failed, {skipped} skipped ({elapsed.TotalSeconds:F2}s) ===");
       Log($"JUnit XML: {resultPath}");
       Log($"Log: {_logPath}");
 

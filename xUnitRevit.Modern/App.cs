@@ -1,50 +1,108 @@
 using System;
+using System.IO;
+using System.Reflection;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 
 namespace xUnitRevit
 {
-  /// <summary>
-  /// Revit External Application for .NET 8+ (Revit 2025+).
-  /// Supports both UI and headless modes.
-  /// </summary>
   class App : IExternalApplication
   {
-    public Result OnStartup(UIControlledApplication a)
-    {
-      a.ControlledApplication.ApplicationInitialized += ControlledApplication_ApplicationInitialized;
-      return Result.Succeeded;
-    }
+    private UIControlledApplication _uiCtrlApp;
+    private bool _uiLaunched;
+    private static string _logPath;
 
-    private void ControlledApplication_ApplicationInitialized(object sender, Autodesk.Revit.DB.Events.ApplicationInitializedEventArgs e)
+    public static void Log(string msg)
     {
       try
       {
+        if (_logPath == null)
+        {
+          var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+          _logPath = Path.Combine(dir, "xUnitRevit_app.log");
+        }
+        File.AppendAllText(_logPath, $"[{DateTime.Now:HH:mm:ss.fff}] {msg}\n");
+      }
+      catch { }
+    }
+
+    public Result OnStartup(UIControlledApplication a)
+    {
+      try { File.WriteAllText(_logPath ?? Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "xUnitRevit_app.log"), ""); } catch { }
+      Log("OnStartup called");
+
+      try
+      {
+        _uiCtrlApp = a;
         Runner.ReadConfig();
-        Application app = sender as Application;
+        Log($"Config: headless={Runner.Config.headless}, autoStart={Runner.Config.autoStart}, assemblies={Runner.Config.startupAssemblies?.Count}");
 
         if (Runner.Config.headless)
         {
-          // No UIApplication needed in headless mode — avoids deadlock in Revit 2026
-          HeadlessRunner.Launch(app, Runner.Config);
-          return;
+          Log("Registering ApplicationInitialized for headless mode");
+          a.ControlledApplication.ApplicationInitialized += OnApplicationInitialized_Headless;
+        }
+        else
+        {
+          Log("Registering Idling for UI mode");
+          a.Idling += OnIdling_LaunchUI;
         }
 
-        UIApplication uiapp = new UIApplication(app);
-        if (Runner.Config.autoStart)
+        Log("OnStartup completed OK");
+        return Result.Succeeded;
+      }
+      catch (Exception ex)
+      {
+        Log($"OnStartup ERROR: {ex}");
+        return Result.Failed;
+      }
+    }
+
+    private void OnApplicationInitialized_Headless(object sender, Autodesk.Revit.DB.Events.ApplicationInitializedEventArgs e)
+    {
+      Log("ApplicationInitialized (headless) fired");
+      try
+      {
+        Application app = sender as Application;
+        Log($"App version: {app?.VersionNumber}");
+        HeadlessRunner.Launch(app, Runner.Config);
+        Log("HeadlessRunner.Launch completed");
+      }
+      catch (Exception ex)
+      {
+        Log($"Headless ERROR: {ex}");
+      }
+    }
+
+    private void OnIdling_LaunchUI(object sender, Autodesk.Revit.UI.Events.IdlingEventArgs e)
+    {
+      if (_uiLaunched) return;
+      _uiLaunched = true;
+      _uiCtrlApp.Idling -= OnIdling_LaunchUI;
+
+      Log("Idling (UI) fired");
+      try
+      {
+        var uiapp = sender as UIApplication;
+        Log($"UIApplication: {uiapp != null}");
+
+        if (uiapp != null && Runner.Config.autoStart)
         {
+          Log("Calling Runner.Launch...");
           Runner.Launch(uiapp);
+          Log("Runner.Launch completed OK");
         }
       }
       catch (Exception ex)
       {
-        System.Diagnostics.Debug.WriteLine($"xUnitRevit startup error: {ex}");
+        Log($"UI launch ERROR: {ex}");
       }
     }
 
     public Result OnShutdown(UIControlledApplication a)
     {
+      Log("OnShutdown called");
       return Result.Succeeded;
     }
   }

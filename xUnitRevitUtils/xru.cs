@@ -28,6 +28,12 @@ namespace xUnitRevitUtils
     public static bool IsHeadless { get; private set; }
 
     /// <summary>
+    /// Work queue for dispatching Revit API calls to the main thread in headless mode.
+    /// Background threads post work here; the main thread pumps it.
+    /// </summary>
+    public static System.Collections.Concurrent.BlockingCollection<(Action work, System.Threading.ManualResetEventSlim done, Exception[] error)> HeadlessWorkQueue { get; private set; }
+
+    /// <summary>
     /// Initialize for UI mode (traditional Revit add-in with full UI access).
     /// </summary>
     public static void Initialize(UIApplication uiapp, SynchronizationContext uiContext, ExternalEvent eventHandler, List<Action> queue)
@@ -52,6 +58,21 @@ namespace xUnitRevitUtils
       UiContext = null;
       EventHandler = null;
       Queue = null;
+      HeadlessWorkQueue = new System.Collections.Concurrent.BlockingCollection<(Action, System.Threading.ManualResetEventSlim, Exception[])>();
+    }
+
+    /// <summary>
+    /// Dispatches an action to the main thread and blocks until complete.
+    /// Called from background threads (xUnit test runner) in headless mode.
+    /// </summary>
+    public static void DispatchToMainThread(Action action)
+    {
+      var done = new System.Threading.ManualResetEventSlim(false);
+      var error = new Exception[1];
+      HeadlessWorkQueue.Add((action, done, error));
+      done.Wait();
+      if (error[0] != null)
+        System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error[0]).Throw();
     }
 
     #region utility methods

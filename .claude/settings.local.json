@@ -31,7 +31,29 @@
       "Bash(powershell \"Stop-Process -Name Revit -Force -ErrorAction SilentlyContinue; Stop-Process -Name RevitWorker -Force -ErrorAction SilentlyContinue\")",
       "Read(//c/Users/konra/source/repos/xUnitRevitFork/$APPDATA/Autodesk/REVIT/Addins/2026/xUnitRevit/**)",
       "Bash(cp \"C:/Users/konra/source/repos/xUnitRevitFork/xUnitRevit.Modern/bin/Debug2026/net8.0-windows/\"*.dll \"$APPDATA/Autodesk/REVIT/Addins/2026/xUnitRevit/\")",
-      "Bash(cp \"C:/Users/konra/source/repos/xUnitRevitFork/xUnitRevit.Modern/bin/Debug2026/net8.0-windows/\"*.pdb \"$APPDATA/Autodesk/REVIT/Addins/2026/xUnitRevit/\")"
+      "Bash(cp \"C:/Users/konra/source/repos/xUnitRevitFork/xUnitRevit.Modern/bin/Debug2026/net8.0-windows/\"*.pdb \"$APPDATA/Autodesk/REVIT/Addins/2026/xUnitRevit/\")",
+      "Bash(find /c/Users/konra/source/repos/xUnitRevitFork -name *.addin -type f)",
+      "Bash(cp \"C:/Users/konra/source/repos/xUnitRevitFork/SampleLibrary.Modern/bin/Debug/net8.0-windows/SampleLibrary.Modern.dll\" \"$APPDATA/Autodesk/REVIT/Addins/2026/xUnitRevit/\")",
+      "Bash(rm -f RevitTestResults.xml RevitTestResults.log)",
+      "Bash(powershell -ExecutionPolicy Bypass -File ./run-revit-tests.ps1 -Timeout 300)",
+      "Bash(powershell -Command \"Test-Path ''C:\\\\Users\\\\konra\\\\source\\\\repos\\\\xUnitRevitFork\\\\run-revit-tests.ps1''\")",
+      "Bash(powershell -Command \"[System.IO.File]::ReadAllBytes\\(''C:\\\\Users\\\\konra\\\\source\\\\repos\\\\xUnitRevitFork\\\\run-revit-tests.ps1''\\)[0..2] -join '',''\")",
+      "Bash(powershell -ExecutionPolicy Bypass -Command \"& { . .\\\\run-revit-tests.ps1 -SkipBuild -Timeout 300 }\")",
+      "Bash(powershell -Command \"[System.IO.File]::ReadAllText\\(''''C:\\\\Users\\\\konra\\\\source\\\\repos\\\\xUnitRevitFork\\\\run-revit-tests.ps1''''\\)\")",
+      "Bash(powershell -ExecutionPolicy Bypass -Command \"& { .\\\\run-revit-tests.ps1 -SkipBuild -Timeout 300 }\")",
+      "Bash(cp \"xUnitRevit.Modern/bin/Debug2026/net8.0-windows/\"*.dll \"$APPDATA/Autodesk/REVIT/Addins/2026/xUnitRevit/\")",
+      "Bash(cp \"xUnitRevit.Modern/bin/Debug2026/net8.0-windows/\"*.pdb \"$APPDATA/Autodesk/REVIT/Addins/2026/xUnitRevit/\")",
+      "Bash(powershell -ExecutionPolicy Bypass -File ./run-revit-tests.ps1 -SkipBuild -Timeout 300)",
+      "Bash(cp \"SampleLibrary.Modern/bin/Debug/net8.0-windows/SampleLibrary.Modern.dll\" \"$APPDATA/Autodesk/REVIT/Addins/2026/xUnitRevit/\")",
+      "Bash(cd:*)",
+      "Bash(powershell \"Get-Process *revit* -ErrorAction SilentlyContinue | Stop-Process -Force\")",
+      "Bash(cp \"C:/Users/konra/source/repos/xUnitRevitFork/xUnitRevitUtils/bin/Debug2026/netstandard2.0/xUnitRevitUtils.dll\" \"$APPDATA/Autodesk/REVIT/Addins/2026/xUnitRevit/\")",
+      "Bash(rm -f RevitTestResults.*)",
+      "Bash(powershell \"Get-Process *revit* -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, MainWindowTitle\")",
+      "Bash(rm -f \"$APPDATA/Autodesk/REVIT/Addins/2026/xUnitRevit/xUnitRevit_startup.log\")",
+      "WebFetch(domain:ricaun.io)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)"
     ]
   }
 }
