@@ -30,8 +30,9 @@ namespace xUnitRevit
     /// </summary>
     public static void OnIdling(object sender, Autodesk.Revit.UI.Events.IdlingEventArgs e)
     {
-      // Process all pending work items on the main thread
-      while (xru.HeadlessWorkQueue.TryTake(out var item))
+      // Process ONE work item per Idling tick to avoid overloading Revit's main thread.
+      // Revit crashes if a single Idling callback takes too long or re-enters document events.
+      if (xru.HeadlessWorkQueue.TryTake(out var item))
       {
         var (work, done, error) = item;
         try

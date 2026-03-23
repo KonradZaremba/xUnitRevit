@@ -63,16 +63,25 @@ namespace xUnitRevitUtils
 
     /// <summary>
     /// Dispatches an action to the main thread and blocks until complete.
-    /// Called from background threads (xUnit test runner) in headless mode.
+    /// Called from background threads to execute Revit API calls on the main thread.
+    /// Works in both headless mode (via work queue) and UI mode (via SynchronizationContext).
     /// </summary>
     public static void DispatchToMainThread(Action action)
     {
-      var done = new System.Threading.ManualResetEventSlim(false);
-      var error = new Exception[1];
-      HeadlessWorkQueue.Add((action, done, error));
-      done.Wait();
-      if (error[0] != null)
-        System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error[0]).Throw();
+      if (IsHeadless)
+      {
+        var done = new System.Threading.ManualResetEventSlim(false);
+        var error = new Exception[1];
+        HeadlessWorkQueue.Add((action, done, error));
+        done.Wait();
+        if (error[0] != null)
+          System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error[0]).Throw();
+      }
+      else
+      {
+        // UI mode — dispatch via SynchronizationContext
+        UiContext.Send(_ => action(), null);
+      }
     }
 
     #region utility methods
@@ -101,7 +110,15 @@ namespace xUnitRevitUtils
       if (IsHeadless)
       {
         Assert.NotNull(App);
-        var doc = App.OpenDocumentFile(filePath);
+        Document doc = null;
+        DispatchToMainThread(() =>
+        {
+          doc = App.OpenDocumentFile(filePath);
+        });
+        // Let Revit finish processing the document open (updaters, events, etc.)
+        // by yielding several Idling ticks before returning to the caller.
+        for (int i = 0; i < 5; i++)
+          DispatchToMainThread(() => { });
         Assert.NotNull(doc);
         return doc;
       }
@@ -169,20 +186,23 @@ namespace xUnitRevitUtils
       {
         return Task.Run(() =>
         {
-          using (Transaction transaction = new Transaction(doc, transactionName))
+          DispatchToMainThread(() =>
           {
-            transaction.Start();
-
-            if (ignoreWarnings)
+            using (Transaction transaction = new Transaction(doc, transactionName))
             {
-              var options = transaction.GetFailureHandlingOptions();
-              options.SetFailuresPreprocessor(new IgnoreAllWarnings());
-              transaction.SetFailureHandlingOptions(options);
-            }
+              transaction.Start();
 
-            action.Invoke();
-            transaction.Commit();
-          }
+              if (ignoreWarnings)
+              {
+                var options = transaction.GetFailureHandlingOptions();
+                options.SetFailuresPreprocessor(new IgnoreAllWarnings());
+                transaction.SetFailureHandlingOptions(options);
+              }
+
+              action.Invoke();
+              transaction.Commit();
+            }
+          });
         });
       }
 
@@ -225,7 +245,10 @@ namespace xUnitRevitUtils
     {
       if (IsHeadless)
       {
-        return Task.Run(() => action.Invoke());
+        return Task.Run(() =>
+        {
+          DispatchToMainThread(() => action.Invoke());
+        });
       }
 
       var tcs = new TaskCompletionSource<string>();

@@ -16,12 +16,9 @@ namespace SampleLibrary.Modern
   {
     internal static string GetTestModel(string filename)
     {
-      // Search candidate directories for the TestModels folder
       var candidates = new[]
       {
-        // 1. Relative to test assembly location (works inside Revit where DLL is deployed)
         Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
-        // 2. Current working directory (works in console runner / dotnet test)
         Directory.GetCurrentDirectory(),
       };
 
@@ -29,7 +26,6 @@ namespace SampleLibrary.Modern
       {
         if (string.IsNullOrEmpty(baseDir)) continue;
 
-        // Walk up from baseDir looking for a TestModels folder
         var dir = baseDir;
         for (int i = 0; i < 6; i++)
         {
@@ -38,7 +34,6 @@ namespace SampleLibrary.Modern
           if (File.Exists(fullPath))
             return Path.GetFullPath(fullPath);
 
-          // Also check SampleLibrary/TestModels (repo layout)
           var sampleLibDir = Path.Combine(dir, "SampleLibrary", "TestModels");
           fullPath = Path.Combine(sampleLibDir, filename);
           if (File.Exists(fullPath))
@@ -50,69 +45,87 @@ namespace SampleLibrary.Modern
         }
       }
 
-      // Fallback: return the old-style path so the error message is meaningful
       return Path.Combine(Directory.GetCurrentDirectory(), "TestModels", filename);
     }
   }
 
   /// <summary>
-  /// Tests that exercise Revit API commands.
-  /// These require Revit to be running with UI thread access (UI mode or Revit Platform Services with journal).
-  /// In headless mode without ExternalEvent dispatch, document operations crash — so we skip.
+  /// Shared fixture that opens walls.rvt once for all Revit tests.
+  /// Opens on the main thread and waits for Revit to finish processing.
   /// </summary>
+  public class WallsDocFixture : IDisposable
+  {
+    public Document Doc { get; }
+
+    public WallsDocFixture()
+    {
+      var testModel = TestModelLocator.GetTestModel("walls.rvt");
+      Doc = xru.OpenDoc(testModel);
+    }
+
+    public void Dispose() { }
+  }
+
+  /// <summary>
+  /// Defines the collection so all Revit test classes run sequentially
+  /// and share the WallsDocFixture (document opened once).
+  /// </summary>
+  [CollectionDefinition("Revit")]
+  public class RevitCollection : ICollectionFixture<WallsDocFixture> { }
+
+  // ---------------------------------------------------------------------------
+  // Test classes — all in [Collection("Revit")] so they share the fixture
+  // and run sequentially (no parallel document opens).
+  // ---------------------------------------------------------------------------
+
+  [Collection("Revit")]
   public class RevitDocumentTests
   {
+    private readonly WallsDocFixture _fixture;
+    public RevitDocumentTests(WallsDocFixture fixture) { _fixture = fixture; }
 
     [Fact]
     public void ApplicationIsInitialized()
     {
-      // This test works in all modes — no document access needed
       Assert.NotNull(xru.App);
     }
 
     [Fact]
     public void CanOpenDocument()
     {
-      if (xru.IsHeadless) return; // Doc operations require UI thread dispatch
-      var testModel = TestModelLocator.GetTestModel("walls.rvt");
-      var doc = xru.OpenDoc(testModel);
-
-      Assert.NotNull(doc);
-      Assert.False(doc.IsFamilyDocument);
-      Assert.NotNull(doc.Title);
+      Assert.NotNull(_fixture.Doc);
+      Assert.False(_fixture.Doc.IsFamilyDocument);
+      Assert.NotNull(_fixture.Doc.Title);
     }
 
     [Fact]
     public void DocumentHasActiveView()
     {
-      if (xru.IsHeadless) return; // Doc operations require UI thread dispatch
-      var testModel = TestModelLocator.GetTestModel("walls.rvt");
-      var doc = xru.OpenDoc(testModel);
-      var activeView = doc.ActiveView;
+      if (xru.IsHeadless) return; // ActiveView requires UI
 
+      var activeView = _fixture.Doc.ActiveView;
       Assert.NotNull(activeView);
       Assert.NotEqual(ViewType.Undefined, activeView.ViewType);
     }
-
   }
 
-  /// <summary>
-  /// Tests querying elements with FilteredElementCollector.
-  /// </summary>
+  [Collection("Revit")]
   public class ElementCollectorTests
   {
+    private readonly Document _doc;
+    public ElementCollectorTests(WallsDocFixture fixture) { _doc = fixture.Doc; }
 
     [Fact]
     public void CollectAllWalls()
     {
-      if (xru.IsHeadless) return; // Doc operations require UI thread dispatch
-      var testModel = TestModelLocator.GetTestModel("walls.rvt");
-      var doc = xru.OpenDoc(testModel);
-
-      var walls = new FilteredElementCollector(doc)
-        .WhereElementIsNotElementType()
-        .OfCategory(BuiltInCategory.OST_Walls)
-        .ToElements();
+      IList<Element> walls = null;
+      xru.DispatchToMainThread(() =>
+      {
+        walls = new FilteredElementCollector(_doc)
+          .WhereElementIsNotElementType()
+          .OfCategory(BuiltInCategory.OST_Walls)
+          .ToElements();
+      });
 
       Assert.NotEmpty(walls);
       Assert.All(walls, w => Assert.IsAssignableFrom<Wall>(w));
@@ -121,18 +134,22 @@ namespace SampleLibrary.Modern
     [Fact]
     public void WallsHaveValidVolume()
     {
-      if (xru.IsHeadless) return; // Doc operations require UI thread dispatch
-      var testModel = TestModelLocator.GetTestModel("walls.rvt");
-      var doc = xru.OpenDoc(testModel);
-
-      var walls = new FilteredElementCollector(doc)
-        .WhereElementIsNotElementType()
-        .OfCategory(BuiltInCategory.OST_Walls)
-        .ToElements();
+      IList<Element> walls = null;
+      xru.DispatchToMainThread(() =>
+      {
+        walls = new FilteredElementCollector(_doc)
+          .WhereElementIsNotElementType()
+          .OfCategory(BuiltInCategory.OST_Walls)
+          .ToElements();
+      });
 
       foreach (var wall in walls)
       {
-        var volumeParam = wall.get_Parameter(BuiltInParameter.HOST_VOLUME_COMPUTED);
+        Parameter volumeParam = null;
+        xru.DispatchToMainThread(() =>
+        {
+          volumeParam = wall.get_Parameter(BuiltInParameter.HOST_VOLUME_COMPUTED);
+        });
         Assert.NotNull(volumeParam);
         Assert.True(volumeParam.AsDouble() > 0, $"Wall {wall.Id} has zero or negative volume");
       }
@@ -141,15 +158,15 @@ namespace SampleLibrary.Modern
     [Fact]
     public void CollectWallTypes()
     {
-      if (xru.IsHeadless) return; // Doc operations require UI thread dispatch
-      var testModel = TestModelLocator.GetTestModel("walls.rvt");
-      var doc = xru.OpenDoc(testModel);
-
-      var wallTypes = new FilteredElementCollector(doc)
-        .WhereElementIsElementType()
-        .OfCategory(BuiltInCategory.OST_Walls)
-        .Cast<WallType>()
-        .ToList();
+      List<WallType> wallTypes = null;
+      xru.DispatchToMainThread(() =>
+      {
+        wallTypes = new FilteredElementCollector(_doc)
+          .WhereElementIsElementType()
+          .OfCategory(BuiltInCategory.OST_Walls)
+          .Cast<WallType>()
+          .ToList();
+      });
 
       Assert.NotEmpty(wallTypes);
       Assert.All(wallTypes, wt => Assert.NotNull(wt.Name));
@@ -158,18 +175,17 @@ namespace SampleLibrary.Modern
     [Fact]
     public void CollectLevels()
     {
-      if (xru.IsHeadless) return; // Doc operations require UI thread dispatch
-      var testModel = TestModelLocator.GetTestModel("walls.rvt");
-      var doc = xru.OpenDoc(testModel);
-
-      var levels = new FilteredElementCollector(doc)
-        .OfClass(typeof(Level))
-        .Cast<Level>()
-        .OrderBy(l => l.Elevation)
-        .ToList();
+      List<Level> levels = null;
+      xru.DispatchToMainThread(() =>
+      {
+        levels = new FilteredElementCollector(_doc)
+          .OfClass(typeof(Level))
+          .Cast<Level>()
+          .OrderBy(l => l.Elevation)
+          .ToList();
+      });
 
       Assert.NotEmpty(levels);
-      // Verify levels are ordered by elevation
       for (int i = 1; i < levels.Count; i++)
       {
         Assert.True(levels[i].Elevation >= levels[i - 1].Elevation,
@@ -180,71 +196,69 @@ namespace SampleLibrary.Modern
     [Fact]
     public void CollectViewsInDocument()
     {
-      if (xru.IsHeadless) return; // Doc operations require UI thread dispatch
-      var testModel = TestModelLocator.GetTestModel("walls.rvt");
-      var doc = xru.OpenDoc(testModel);
-
-      var views = new FilteredElementCollector(doc)
-        .OfClass(typeof(View))
-        .Cast<View>()
-        .Where(v => !v.IsTemplate)
-        .ToList();
+      List<View> views = null;
+      xru.DispatchToMainThread(() =>
+      {
+        views = new FilteredElementCollector(_doc)
+          .OfClass(typeof(View))
+          .Cast<View>()
+          .Where(v => !v.IsTemplate)
+          .ToList();
+      });
 
       Assert.NotEmpty(views);
     }
-
   }
 
-  /// <summary>
-  /// Tests that use transactions to modify and roll back changes.
-  /// </summary>
+  [Collection("Revit")]
   public class TransactionTests
   {
+    private readonly Document _doc;
+    public TransactionTests(WallsDocFixture fixture) { _doc = fixture.Doc; }
 
     [Fact]
     public void CreateAndDeleteWall()
     {
-      if (xru.IsHeadless) return; // Doc operations require UI thread dispatch
-      var testModel = TestModelLocator.GetTestModel("walls.rvt");
-      var doc = xru.OpenDoc(testModel);
+      int wallCountBefore = 0;
+      xru.DispatchToMainThread(() =>
+      {
+        wallCountBefore = new FilteredElementCollector(_doc)
+          .WhereElementIsNotElementType()
+          .OfCategory(BuiltInCategory.OST_Walls)
+          .GetElementCount();
+      });
 
-      int wallCountBefore = new FilteredElementCollector(doc)
-        .WhereElementIsNotElementType()
-        .OfCategory(BuiltInCategory.OST_Walls)
-        .GetElementCount();
-
-      // Create a wall inside a transaction, then roll back
       xru.Run(() =>
       {
-        using (Transaction t = new Transaction(doc, "Test - Create Wall"))
+        using (Transaction t = new Transaction(_doc, "Test - Create Wall"))
         {
           t.Start();
 
-          // Get a level to place the wall on
-          var level = new FilteredElementCollector(doc)
+          var level = new FilteredElementCollector(_doc)
             .OfClass(typeof(Level))
             .Cast<Level>()
             .First();
 
-          // Create a simple line for the wall
           var start = new XYZ(0, 0, 0);
-          var end = new XYZ(20, 0, 0); // 20 feet long
+          var end = new XYZ(20, 0, 0);
           var line = Line.CreateBound(start, end);
 
-          var wall = Wall.Create(doc, line, level.Id, false);
+          var wall = Wall.Create(_doc, line, level.Id, false);
           Assert.NotNull(wall);
           Assert.True(wall.Id != ElementId.InvalidElementId);
 
-          // Roll back — don't keep the wall
           t.RollBack();
         }
-      }, doc).Wait();
+      }, _doc).Wait();
 
-      // Verify wall count is unchanged after rollback
-      int wallCountAfter = new FilteredElementCollector(doc)
-        .WhereElementIsNotElementType()
-        .OfCategory(BuiltInCategory.OST_Walls)
-        .GetElementCount();
+      int wallCountAfter = 0;
+      xru.DispatchToMainThread(() =>
+      {
+        wallCountAfter = new FilteredElementCollector(_doc)
+          .WhereElementIsNotElementType()
+          .OfCategory(BuiltInCategory.OST_Walls)
+          .GetElementCount();
+      });
 
       Assert.Equal(wallCountBefore, wallCountAfter);
     }
@@ -252,49 +266,54 @@ namespace SampleLibrary.Modern
     [Fact]
     public void ModifyWallParameterAndRollBack()
     {
-      if (xru.IsHeadless) return; // Doc operations require UI thread dispatch
-      var testModel = TestModelLocator.GetTestModel("walls.rvt");
-      var doc = xru.OpenDoc(testModel);
+      Wall wall = null;
+      Parameter offsetParam = null;
+      double originalOffset = 0;
 
-      var wall = new FilteredElementCollector(doc)
-        .WhereElementIsNotElementType()
-        .OfCategory(BuiltInCategory.OST_Walls)
-        .FirstElement() as Wall;
+      xru.DispatchToMainThread(() =>
+      {
+        wall = new FilteredElementCollector(_doc)
+          .WhereElementIsNotElementType()
+          .OfCategory(BuiltInCategory.OST_Walls)
+          .FirstElement() as Wall;
+
+        offsetParam = wall.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET);
+        originalOffset = offsetParam.AsDouble();
+      });
 
       Assert.NotNull(wall);
 
-      var offsetParam = wall.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET);
-      double originalOffset = offsetParam.AsDouble();
-
-      // Modify and roll back
       xru.Run(() =>
       {
-        using (Transaction t = new Transaction(doc, "Test - Modify Offset"))
+        using (Transaction t = new Transaction(_doc, "Test - Modify Offset"))
         {
           t.Start();
-          offsetParam.Set(originalOffset + 5.0); // Add 5 feet
+          offsetParam.Set(originalOffset + 5.0);
           Assert.Equal(originalOffset + 5.0, offsetParam.AsDouble(), precision: 5);
           t.RollBack();
         }
-      }, doc).Wait();
+      }, _doc).Wait();
 
-      // Verify parameter reverted
-      Assert.Equal(originalOffset, offsetParam.AsDouble(), precision: 5);
+      double finalOffset = 0;
+      xru.DispatchToMainThread(() =>
+      {
+        finalOffset = offsetParam.AsDouble();
+      });
+      Assert.Equal(originalOffset, finalOffset, precision: 5);
     }
 
     [Fact]
     public void RunInTransactionHelper()
     {
-      if (xru.IsHeadless) return; // Doc operations require UI thread dispatch
-      var testModel = TestModelLocator.GetTestModel("walls.rvt");
-      var doc = xru.OpenDoc(testModel);
+      IList<Element> walls = null;
+      xru.DispatchToMainThread(() =>
+      {
+        walls = new FilteredElementCollector(_doc)
+          .WhereElementIsNotElementType()
+          .OfCategory(BuiltInCategory.OST_Walls)
+          .ToElements();
+      });
 
-      var walls = new FilteredElementCollector(doc)
-        .WhereElementIsNotElementType()
-        .OfCategory(BuiltInCategory.OST_Walls)
-        .ToElements();
-
-      // Use the xru.RunInTransaction helper
       xru.RunInTransaction(() =>
       {
         foreach (var wall in walls)
@@ -303,46 +322,48 @@ namespace SampleLibrary.Modern
           var offset = UnitUtils.ConvertToInternalUnits(500, param.GetUnitTypeId());
           param.Set(offset);
         }
-      }, doc, "Set Wall Offsets").Wait();
+      }, _doc, "Set Wall Offsets").Wait();
 
-      // Verify changes were committed
       foreach (var wall in walls)
       {
-        var param = wall.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET);
-        Assert.True(param.AsDouble() > 0, $"Wall {wall.Id} offset should be > 0 after transaction");
+        double val = 0;
+        xru.DispatchToMainThread(() =>
+        {
+          val = wall.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET).AsDouble();
+        });
+        Assert.True(val > 0, $"Wall {wall.Id} offset should be > 0 after transaction");
       }
     }
-
   }
 
-  /// <summary>
-  /// Tests for geometry extraction from Revit elements.
-  /// </summary>
+  [Collection("Revit")]
   public class GeometryExtractionTests
   {
+    private readonly Document _doc;
+    public GeometryExtractionTests(WallsDocFixture fixture) { _doc = fixture.Doc; }
 
     [Fact]
     public void WallHasSolid()
     {
-      if (xru.IsHeadless) return; // Doc operations require UI thread dispatch
-      var testModel = TestModelLocator.GetTestModel("walls.rvt");
-      var doc = xru.OpenDoc(testModel);
+      List<Solid> solids = null;
+      xru.DispatchToMainThread(() =>
+      {
+        var wall = new FilteredElementCollector(_doc)
+          .WhereElementIsNotElementType()
+          .OfCategory(BuiltInCategory.OST_Walls)
+          .FirstElement();
 
-      var wall = new FilteredElementCollector(doc)
-        .WhereElementIsNotElementType()
-        .OfCategory(BuiltInCategory.OST_Walls)
-        .FirstElement();
+        Assert.NotNull(wall);
 
-      Assert.NotNull(wall);
+        var options = new Options { ComputeReferences = true };
+        var geomElement = wall.get_Geometry(options);
+        Assert.NotNull(geomElement);
 
-      var options = new Options { ComputeReferences = true };
-      var geomElement = wall.get_Geometry(options);
-      Assert.NotNull(geomElement);
-
-      var solids = geomElement
-        .OfType<Solid>()
-        .Where(s => s.Volume > 0)
-        .ToList();
+        solids = geomElement
+          .OfType<Solid>()
+          .Where(s => s.Volume > 0)
+          .ToList();
+      });
 
       Assert.NotEmpty(solids);
       Assert.All(solids, s =>
@@ -355,50 +376,54 @@ namespace SampleLibrary.Modern
     [Fact]
     public void WallLocationIsLine()
     {
-      if (xru.IsHeadless) return; // Doc operations require UI thread dispatch
-      var testModel = TestModelLocator.GetTestModel("walls.rvt");
-      var doc = xru.OpenDoc(testModel);
-
-      var wall = new FilteredElementCollector(doc)
-        .WhereElementIsNotElementType()
-        .OfCategory(BuiltInCategory.OST_Walls)
-        .FirstElement() as Wall;
+      Wall wall = null;
+      xru.DispatchToMainThread(() =>
+      {
+        wall = new FilteredElementCollector(_doc)
+          .WhereElementIsNotElementType()
+          .OfCategory(BuiltInCategory.OST_Walls)
+          .FirstElement() as Wall;
+      });
 
       Assert.NotNull(wall);
 
-      var location = wall.Location as LocationCurve;
+      LocationCurve location = null;
+      Line line = null;
+      xru.DispatchToMainThread(() =>
+      {
+        location = wall.Location as LocationCurve;
+        line = location?.Curve as Line;
+      });
+
       Assert.NotNull(location);
       Assert.IsType<Line>(location.Curve);
-
-      var line = location.Curve as Line;
       Assert.True(line.Length > 0, "Wall length should be positive");
     }
 
     [Fact]
     public void WallBoundingBoxIsValid()
     {
-      if (xru.IsHeadless) return; // Doc operations require UI thread dispatch
-      var testModel = TestModelLocator.GetTestModel("walls.rvt");
-      var doc = xru.OpenDoc(testModel);
+      BoundingBoxXYZ bb = null;
+      xru.DispatchToMainThread(() =>
+      {
+        var wall = new FilteredElementCollector(_doc)
+          .WhereElementIsNotElementType()
+          .OfCategory(BuiltInCategory.OST_Walls)
+          .FirstElement();
 
-      var wall = new FilteredElementCollector(doc)
-        .WhereElementIsNotElementType()
-        .OfCategory(BuiltInCategory.OST_Walls)
-        .FirstElement();
+        Assert.NotNull(wall);
+        bb = wall.get_BoundingBox(null);
+      });
 
-      Assert.NotNull(wall);
-
-      var bb = wall.get_BoundingBox(null);
       Assert.NotNull(bb);
       Assert.True(bb.Max.X >= bb.Min.X, "BoundingBox Max.X should be >= Min.X");
       Assert.True(bb.Max.Y >= bb.Min.Y, "BoundingBox Max.Y should be >= Min.Y");
       Assert.True(bb.Max.Z >= bb.Min.Z, "BoundingBox Max.Z should be >= Min.Z");
     }
-
   }
 
   /// <summary>
-  /// Tests for unit conversion (Revit 2021+ API).
+  /// Unit conversion tests — no document needed, thread-safe.
   /// </summary>
   public class UnitConversionTests
   {
@@ -425,11 +450,10 @@ namespace SampleLibrary.Modern
     [Fact]
     public void SquareMetersConversion()
     {
-      // 10 sq feet to sq meters
       double sqFeet = 10.0;
       double sqMeters = UnitUtils.ConvertFromInternalUnits(sqFeet, UnitTypeId.SquareMeters);
       Assert.True(sqMeters > 0);
-      Assert.True(sqMeters < sqFeet); // sq meters < sq feet always
+      Assert.True(sqMeters < sqFeet);
     }
 
     [Fact]

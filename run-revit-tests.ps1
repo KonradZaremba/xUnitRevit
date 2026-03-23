@@ -105,9 +105,14 @@ while ($elapsed -lt $Timeout) {
   Start-Sleep -Seconds $pollInterval
   $elapsed += $pollInterval
 
-  # Check if Revit exited (exitAfterTests=true)
+  # Check if Revit exited/crashed
   if ($process.HasExited) {
-    Write-Host "Revit exited with code $($process.ExitCode) after ${elapsed}s" -ForegroundColor Yellow
+    # If results exist, tests completed before crash - that's OK
+    if (Test-Path $ResultsPath) {
+      Write-Host "Revit exited (code $($process.ExitCode)) but results exist - tests completed." -ForegroundColor Yellow
+    } else {
+      Write-Host "Revit exited with code $($process.ExitCode) after ${elapsed}s" -ForegroundColor Yellow
+    }
     break
   }
 
@@ -139,10 +144,15 @@ if ($elapsed -ge $Timeout -and -not (Test-Path $ResultsPath)) {
   exit 1
 }
 
-# Kill Revit if still running (results arrived but process didn't exit yet)
+# Close Revit gracefully if still running
 if (-not $process.HasExited) {
   Write-Host "Closing Revit..." -ForegroundColor Yellow
-  Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+  # Try graceful close first (WM_CLOSE), then force after 10s
+  $process.CloseMainWindow() | Out-Null
+  if (-not $process.WaitForExit(10000)) {
+    Write-Host "Graceful close timed out, forcing..." -ForegroundColor Yellow
+    Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+  }
 }
 
 # --- Step 9: Report results ---
