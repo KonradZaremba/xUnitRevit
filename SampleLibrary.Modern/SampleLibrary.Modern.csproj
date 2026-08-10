@@ -4,12 +4,15 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <RootNamespace>SampleLibrary.Modern</RootNamespace>
     <AssemblyName>SampleLibrary.Modern</AssemblyName>
-    <IsTestProject>false</IsTestProject>
+    <IsTestProject>true</IsTestProject>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <RevitVersion Condition="'$(RevitVersion)' == ''">2026</RevitVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="Autodesk.Revit.SDK" Version="$(RevitVersion).*" ExcludeAssets="runtime" />
   </ItemGroup>
 
@@ -17,5 +20,22 @@
     <ProjectReference Include="..\xUnitRevitUtils\xUnitRevitUtils.csproj" />
     <ProjectReference Include="..\xUnitRevit.Modern\xUnitRevit.Modern.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- Ship all test models (incl. per-version walls_<ver>.rvt) with the build output
+         so TestModelLocator finds them next to the DLL. -->
+    <Content Include="..\SampleLibrary\TestModels\*.rvt"
+             Link="TestModels\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Sign build output with the local dev cert so ALL deploy paths (dotnet test / VS
+       Test Explorer via RevitTestExecutor, which copies bin directly) carry signed DLLs
+       and Revit skips the unsigned-add-in prompt. No-op if setup-signing.ps1 hasn't run. -->
+  <Target Name="SignRevitAddinOutput" AfterTargets="Build"
+          Condition="Exists('$(MSBuildProjectDirectory)\..\.signing-thumbprint')">
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\sign-addin.ps1&quot; -Path &quot;$(TargetDir.TrimEnd('\'))&quot;"
+          ContinueOnError="true" />
+  </Target>
 
 </Project>

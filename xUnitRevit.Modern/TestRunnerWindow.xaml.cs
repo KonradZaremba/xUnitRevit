@@ -130,6 +130,20 @@ namespace xUnitRevit
     {
       await _viewModel.RunSelectedTests();
     }
+
+    private void CopyReport_Click(object sender, RoutedEventArgs e)
+    {
+      try
+      {
+        var report = _viewModel.GenerateReport();
+        Clipboard.SetText(report);
+        _viewModel.WatchStatus = "Report copied to clipboard.";
+      }
+      catch (Exception ex)
+      {
+        _viewModel.WatchStatus = $"Copy failed: {ex.Message}";
+      }
+    }
   }
 
   public class TestCaseViewModel : INotifyPropertyChanged
@@ -245,6 +259,55 @@ namespace xUnitRevit
       {
         System.Diagnostics.Debug.WriteLine($"Failed to load assembly: {ex.Message}");
       }
+    }
+
+    /// <summary>
+    /// Builds a plain-text, copy-friendly report of the current run:
+    /// a VS-style summary line, then failures (with messages), skips (with reasons), and passes.
+    /// </summary>
+    public string GenerateReport()
+    {
+      var sb = new System.Text.StringBuilder();
+      string revit;
+      try { revit = xUnitRevitUtils.xru.App?.VersionNumber ?? "n/a"; } catch { revit = "n/a"; }
+
+      var total = Tests.Count;
+      var passed = Tests.Count(t => t.Status == "Passed");
+      var failed = Tests.Count(t => t.Status == "Failed");
+      var skipped = Tests.Count(t => t.Status == "Skipped");
+      var notRun = total - passed - failed - skipped;
+
+      sb.AppendLine("=== xUnitRevit Test Report ===");
+      sb.AppendLine($"Revit: {revit}    {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+      sb.AppendLine($"Result: {(failed == 0 ? "PASS" : "FAIL")}  |  {total} total, {passed} passed, {failed} failed, {skipped} skipped" +
+                    (notRun > 0 ? $", {notRun} not run" : ""));
+      sb.AppendLine();
+
+      var failedTests = Tests.Where(t => t.Status == "Failed").ToList();
+      sb.AppendLine($"FAILED ({failedTests.Count}):");
+      if (failedTests.Count == 0) sb.AppendLine("  (none)");
+      foreach (var t in failedTests)
+      {
+        sb.AppendLine($"  ✗ {t.DisplayName} ({t.Duration})");
+        if (!string.IsNullOrWhiteSpace(t.Message))
+          foreach (var line in t.Message.Split('\n'))
+            sb.AppendLine($"      {line.TrimEnd('\r')}");
+      }
+      sb.AppendLine();
+
+      var skippedTests = Tests.Where(t => t.Status == "Skipped").ToList();
+      sb.AppendLine($"SKIPPED ({skippedTests.Count}):");
+      if (skippedTests.Count == 0) sb.AppendLine("  (none)");
+      foreach (var t in skippedTests)
+        sb.AppendLine($"  ⊘ {t.DisplayName} — {t.Message}");
+      sb.AppendLine();
+
+      var passedTests = Tests.Where(t => t.Status == "Passed").ToList();
+      sb.AppendLine($"PASSED ({passedTests.Count}):");
+      foreach (var t in passedTests)
+        sb.AppendLine($"  ✓ {t.DisplayName} ({t.Duration})");
+
+      return sb.ToString();
     }
 
     public async Task RunAllTests()

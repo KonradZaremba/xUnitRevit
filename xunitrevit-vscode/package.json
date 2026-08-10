@@ -9,10 +9,17 @@
   },
   "categories": ["Testing"],
   "activationEvents": [
-    "workspaceContains:**/*.csproj"
+    "workspaceContains:**/run-revit-tests.ps1",
+    "onCommand:xunitRevit.refreshTests"
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "commands": [
+      {
+        "command": "xunitRevit.refreshTests",
+        "title": "xUnitRevit: Refresh Tests"
+      }
+    ],
     "configuration": {
       "title": "xUnitRevit",
       "properties": {

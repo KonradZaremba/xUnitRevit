@@ -350,3 +350,12 @@ MigrationBackup/
 .ionide/
 xUnitRevit/config.json
 .idea/
+CLAUDE.md
+
+# Local code-signing cert thumbprint (machine-specific)
+.signing-thumbprint
+
+# Claude Code tooling (local only — never push)
+.claude/
+xunitrevit-vscode/node_modules/
+xunitrevit-vscode/out/

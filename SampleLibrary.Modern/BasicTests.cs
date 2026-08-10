@@ -43,7 +43,11 @@ namespace SampleLibrary.Modern
     [Fact]
     public void IntentionalFailure()
     {
-      // This test intentionally fails to verify failure reporting
+      // Demonstrates failure reporting. Set XUNITREVIT_DEMO_FAILURES=1 to activate;
+      // otherwise passes so default runs can be green.
+      if (Environment.GetEnvironmentVariable("XUNITREVIT_DEMO_FAILURES") != "1")
+        return;
+
       Assert.Equal(42, 6 * 9);
     }
 

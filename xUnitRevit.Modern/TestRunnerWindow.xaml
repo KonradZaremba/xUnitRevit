@@ -17,17 +17,33 @@
             <Button Content="Load Assembly" Click="LoadAssembly_Click" Padding="10,5" Margin="0,0,10,0"/>
             <Button Content="Run All" Click="RunAll_Click" Padding="10,5" Margin="0,0,10,0"
                     IsEnabled="{Binding HasTests}"/>
-            <Button Content="Run Selected" Click="RunSelected_Click" Padding="10,5"
+            <Button Content="Run Selected" Click="RunSelected_Click" Padding="10,5" Margin="0,0,10,0"
                     IsEnabled="{Binding HasSelectedTests}"/>
+            <Button Content="📋 Copy Report" Click="CopyReport_Click" Padding="10,5"
+                    ToolTip="Copy a text summary (pass/fail/skip + failure messages) to the clipboard"/>
         </StackPanel>
 
-        <!-- Status bar -->
-        <TextBlock Grid.Row="1" Margin="0,0,0,5">
-            <Run Text="Tests: "/><Run Text="{Binding TotalCount, Mode=OneWay}"/>
-            <Run Text=" | Passed: "/><Run Text="{Binding PassedCount, Mode=OneWay}" Foreground="Green"/>
-            <Run Text=" | Failed: "/><Run Text="{Binding FailedCount, Mode=OneWay}" Foreground="Red"/>
-            <Run Text=" | Skipped: "/><Run Text="{Binding SkippedCount, Mode=OneWay}" Foreground="Orange"/>
-        </TextBlock>
+        <!-- Status bar: VS-style counts with pill badges -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,5">
+            <TextBlock FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0">
+                <Run Text="Total: "/><Run Text="{Binding TotalCount, Mode=OneWay}"/>
+            </TextBlock>
+            <Border Background="#E6F4EA" CornerRadius="3" Padding="6,2" Margin="0,0,6,0">
+                <TextBlock Foreground="#137333" FontWeight="SemiBold">
+                    <Run Text="✓ "/><Run Text="{Binding PassedCount, Mode=OneWay}"/><Run Text=" passed"/>
+                </TextBlock>
+            </Border>
+            <Border Background="#FCE8E6" CornerRadius="3" Padding="6,2" Margin="0,0,6,0">
+                <TextBlock Foreground="#C5221F" FontWeight="SemiBold">
+                    <Run Text="✗ "/><Run Text="{Binding FailedCount, Mode=OneWay}"/><Run Text=" failed"/>
+                </TextBlock>
+            </Border>
+            <Border Background="#FEF7E0" CornerRadius="3" Padding="6,2">
+                <TextBlock Foreground="#B06000" FontWeight="SemiBold">
+                    <Run Text="⊘ "/><Run Text="{Binding SkippedCount, Mode=OneWay}"/><Run Text=" skipped"/>
+                </TextBlock>
+            </Border>
+        </StackPanel>
 
         <!-- Test list -->
         <DataGrid Grid.Row="2"
@@ -37,7 +53,28 @@
                   SelectionMode="Extended"
                   CanUserSortColumns="True">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="80"/>
+                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="90">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="FontWeight" Value="Bold"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Status}" Value="Passed">
+                                    <Setter Property="Foreground" Value="#137333"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Status}" Value="Failed">
+                                    <Setter Property="Foreground" Value="#C5221F"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Status}" Value="Skipped">
+                                    <Setter Property="Foreground" Value="#B06000"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Status}" Value="Pending">
+                                    <Setter Property="Foreground" Value="Gray"/>
+                                    <Setter Property="FontWeight" Value="Normal"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
                 <DataGridTextColumn Header="Test Name" Binding="{Binding DisplayName}" Width="*"/>
                 <DataGridTextColumn Header="Duration" Binding="{Binding Duration}" Width="100"/>
                 <DataGridTextColumn Header="Message" Binding="{Binding Message}" Width="200"/>

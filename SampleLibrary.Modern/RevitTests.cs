@@ -3,52 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Autodesk.Revit.DB;
 using Xunit;
 using xUnitRevitUtils;
 
 namespace SampleLibrary.Modern
 {
-  /// <summary>
-  /// Resolves test model paths across execution contexts (Revit headless, Revit UI, console runner).
-  /// </summary>
-  internal static class TestModelLocator
-  {
-    internal static string GetTestModel(string filename)
-    {
-      var candidates = new[]
-      {
-        Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
-        Directory.GetCurrentDirectory(),
-      };
-
-      foreach (var baseDir in candidates)
-      {
-        if (string.IsNullOrEmpty(baseDir)) continue;
-
-        var dir = baseDir;
-        for (int i = 0; i < 6; i++)
-        {
-          var testModelsDir = Path.Combine(dir, "TestModels");
-          var fullPath = Path.Combine(testModelsDir, filename);
-          if (File.Exists(fullPath))
-            return Path.GetFullPath(fullPath);
-
-          var sampleLibDir = Path.Combine(dir, "SampleLibrary", "TestModels");
-          fullPath = Path.Combine(sampleLibDir, filename);
-          if (File.Exists(fullPath))
-            return Path.GetFullPath(fullPath);
-
-          var parent = Path.GetDirectoryName(dir);
-          if (parent == null || parent == dir) break;
-          dir = parent;
-        }
-      }
-
-      return Path.Combine(Directory.GetCurrentDirectory(), "TestModels", filename);
-    }
-  }
-
   /// <summary>
   /// Shared fixture that opens walls.rvt once for all Revit tests.
   /// Opens on the main thread and waits for Revit to finish processing.
@@ -60,6 +21,12 @@ namespace SampleLibrary.Modern
     public WallsDocFixture()
     {
       var testModel = TestModelLocator.GetTestModel("walls.rvt");
+
+      // Guard against git-LFS pointer files on clones without `git lfs pull`
+      if (new FileInfo(testModel).Length < 1024)
+        throw new InvalidOperationException(
+          $"Test model '{testModel}' is suspiciously small — likely a git LFS pointer file. Run 'git lfs pull' and rebuild.");
+
       Doc = xru.OpenDoc(testModel);
     }
 
@@ -79,6 +46,7 @@ namespace SampleLibrary.Modern
   // ---------------------------------------------------------------------------
 
   [Collection("Revit")]
+  [Trait("Category", "Revit")]
   public class RevitDocumentTests
   {
     private readonly WallsDocFixture _fixture;
@@ -110,6 +78,7 @@ namespace SampleLibrary.Modern
   }
 
   [Collection("Revit")]
+  [Trait("Category", "Revit")]
   public class ElementCollectorTests
   {
     private readonly Document _doc;
@@ -167,6 +136,7 @@ namespace SampleLibrary.Modern
           .Cast<WallType>()
           .ToList();
       });
+      Task.Delay(5000).Wait(); // Ensure main thread processing is done before assertions
 
       Assert.NotEmpty(wallTypes);
       Assert.All(wallTypes, wt => Assert.NotNull(wt.Name));
@@ -211,6 +181,7 @@ namespace SampleLibrary.Modern
   }
 
   [Collection("Revit")]
+  [Trait("Category", "Revit")]
   public class TransactionTests
   {
     private readonly Document _doc;
@@ -337,6 +308,7 @@ namespace SampleLibrary.Modern
   }
 
   [Collection("Revit")]
+  [Trait("Category", "Revit")]
   public class GeometryExtractionTests
   {
     private readonly Document _doc;
@@ -425,6 +397,7 @@ namespace SampleLibrary.Modern
   /// <summary>
   /// Unit conversion tests — no document needed, thread-safe.
   /// </summary>
+  [Trait("Category", "Revit")] // calls UnitUtils statics — needs RevitAPI.dll at runtime
   public class UnitConversionTests
   {
     [Theory]

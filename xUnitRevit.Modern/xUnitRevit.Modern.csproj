@@ -11,6 +11,8 @@
     <Company>Speckle</Company>
     <Description>xUnit runner for Revit 2025+ (.NET 8)</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <!-- Copy NuGet dependencies (xunit.runner.utility etc.) to output — required for Revit add-in deployment -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <!-- Default RevitVersion -->
     <RevitVersion Condition="'$(RevitVersion)' == ''">2025</RevitVersion>
   </PropertyGroup>

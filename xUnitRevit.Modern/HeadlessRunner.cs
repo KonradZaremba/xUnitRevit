@@ -20,9 +20,9 @@ namespace xUnitRevit
   {
     private static bool _resolverRegistered;
     private static string _logPath;
-    private static volatile bool _testsComplete;
-    private static bool _exitAfterTests;
-    private static string _capturedResultPath;
+
+    /// <summary>Set true once the test run has finished (results written / sentinel dropped).</summary>
+    internal static volatile bool TestsComplete;
 
     /// <summary>
     /// Called by Revit's Idling event on the main thread.
@@ -49,28 +49,11 @@ namespace xUnitRevit
         }
       }
 
-      if (_testsComplete)
-      {
-        // Unregister idling handler
-        if (sender is Autodesk.Revit.UI.UIApplication uiapp)
-          uiapp.Idling -= OnIdling;
-
-        if (_exitAfterTests)
-        {
-          Log("exitAfterTests=true - signaling completion. External runner will close Revit.");
-          try
-          {
-            var sentinel = Path.ChangeExtension(_capturedResultPath, ".done");
-            File.WriteAllText(sentinel, DateTime.Now.ToString("o"));
-          }
-          catch { }
-        }
-      }
-      else
-      {
-        // Request another Idling callback soon
+      // Keep pumping only while tests are still running or work is queued.
+      // Once tests are done and the queue is drained, stop forcing continuous Idling
+      // so Revit returns to a normal idle state instead of busy-spinning forever.
+      if (!TestsComplete || xru.HeadlessWorkQueue.Count > 0)
         e.SetRaiseWithoutDelay();
-      }
     }
 
     internal static void Log(string message)
@@ -106,11 +89,12 @@ namespace xUnitRevit
 
       // Initialize xru in headless mode
       xru.InitializeHeadless(app);
+      xru.Logger = Log; // let xru trace the dispatch/queue path into this same log
       Log("xru initialized in headless mode");
 
       // Tests run on a background thread (xUnit needs its own threads).
-      // Revit API document tests skip in headless mode (no UI thread dispatch available).
-      // Unit conversion tests work because UnitUtils is thread-safe.
+      // Revit API calls are dispatched back to the main thread via xru.DispatchToMainThread(),
+      // which posts to HeadlessWorkQueue and is pumped by OnIdling one item per tick.
       var capturedResultPath = resultPath;
       var exitAfterTests = config.exitAfterTests;
 
@@ -141,6 +125,8 @@ namespace xUnitRevit
         }
         finally
         {
+          // Let OnIdling stop forcing continuous callbacks — Revit returns to normal idle.
+          TestsComplete = true;
           if (exitAfterTests)
           {
             Log("exitAfterTests=true - signaling completion.");

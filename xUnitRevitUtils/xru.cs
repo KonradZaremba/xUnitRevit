@@ -28,6 +28,20 @@ namespace xUnitRevitUtils
     public static bool IsHeadless { get; private set; }
 
     /// <summary>
+    /// Optional diagnostic logger. In headless mode HeadlessRunner wires this to its log file
+    /// so the dispatch/queue path can be traced without a circular project reference.
+    /// </summary>
+    public static Action<string> Logger { get; set; }
+
+    private static void LogDiag(string message) => Logger?.Invoke(message);
+
+    /// <summary>
+    /// How long a headless main-thread dispatch waits before treating the work item as stuck.
+    /// Generous enough to cover slow document opens/upgrades on a cold Revit.
+    /// </summary>
+    private const int MainThreadDispatchTimeoutSeconds = 120;
+
+    /// <summary>
     /// Work queue for dispatching Revit API calls to the main thread in headless mode.
     /// Background threads post work here; the main thread pumps it.
     /// </summary>
@@ -73,7 +87,13 @@ namespace xUnitRevitUtils
         var done = new System.Threading.ManualResetEventSlim(false);
         var error = new Exception[1];
         HeadlessWorkQueue.Add((action, done, error));
-        done.Wait();
+        // Wait with a timeout so a stuck main-thread call surfaces as a diagnostic
+        // instead of hanging the whole run indefinitely.
+        if (!done.Wait(TimeSpan.FromSeconds(MainThreadDispatchTimeoutSeconds)))
+        {
+          LogDiag($"DispatchToMainThread: TIMEOUT after {MainThreadDispatchTimeoutSeconds}s waiting for main thread — work item never completed (Idling not draining queue, or the API call is blocked).");
+          throw new TimeoutException($"Headless main-thread dispatch timed out after {MainThreadDispatchTimeoutSeconds}s. See log for details.");
+        }
         if (error[0] != null)
           System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error[0]).Throw();
       }
@@ -146,15 +166,20 @@ namespace xUnitRevitUtils
       {
         Assert.NotNull(App);
         Document doc = null;
-
-        if (!File.Exists(filePath))
+        DispatchToMainThread(() =>
         {
-          doc = App.NewProjectDocument(templatePath);
-          doc.SaveAs(filePath);
-          doc.Close();
-        }
+          if (!File.Exists(filePath))
+          {
+            doc = App.NewProjectDocument(templatePath);
+            doc.SaveAs(filePath);
+            doc.Close();
+          }
 
-        doc = App.OpenDocumentFile(filePath);
+          doc = App.OpenDocumentFile(filePath);
+        });
+        // Let Revit finish processing the document open
+        for (int i = 0; i < 5; i++)
+          DispatchToMainThread(() => { });
         Assert.NotNull(doc);
         return doc;
       }
@@ -178,7 +203,7 @@ namespace xUnitRevitUtils
 
     /// <summary>
     /// Runs an Action in a Revit transaction.
-    /// In UI mode, uses ExternalEvent queue. In headless mode, executes directly.
+    /// In UI mode, uses ExternalEvent queue. In headless mode, dispatches to main thread via work queue.
     /// </summary>
     public static Task RunInTransaction(Action action, Document doc, string transactionName = "transaction", bool ignoreWarnings = false)
     {
@@ -239,7 +264,7 @@ namespace xUnitRevitUtils
     }
 
     /// <summary>
-    /// Runs an Action. In UI mode, uses ExternalEvent queue. In headless mode, executes directly.
+    /// Runs an Action. In UI mode, uses ExternalEvent queue. In headless mode, dispatches to main thread via work queue.
     /// </summary>
     public static Task Run(Action action, Document doc)
     {

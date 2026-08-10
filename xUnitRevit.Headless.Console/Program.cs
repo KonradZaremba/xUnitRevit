@@ -21,17 +21,38 @@ class Program
     Console.WriteLine("=== xUnitRevit Headless Test Runner (Console) ===");
     Console.WriteLine();
 
-    if (args.Length == 0)
+    var includeRevit = false;
+    var positional = new List<string>();
+    foreach (var arg in args)
     {
-      Console.WriteLine("Usage: xUnitRevit.Headless.Console <test-assembly.dll> [result-path.xml]");
+      if (arg == "--include-revit")
+        includeRevit = true;
+      else if (arg.StartsWith("--"))
+      {
+        Console.Error.WriteLine($"ERROR: Unknown option: {arg}");
+        return 2;
+      }
+      else
+        positional.Add(arg);
+    }
+
+    if (positional.Count == 0)
+    {
+      Console.WriteLine("Usage: xUnitRevit.Headless.Console <test-assembly.dll> [result-path.xml] [--include-revit]");
+      Console.WriteLine();
+      Console.WriteLine("Options:");
+      Console.WriteLine("  --include-revit   Also run tests tagged [Trait(\"Category\", \"Revit\")]");
+      Console.WriteLine("                    (skipped by default — they need the Revit runtime)");
+      Console.WriteLine();
+      Console.WriteLine("Exit codes: 0 = all passed, 1 = test failures, 2 = infrastructure failure");
       Console.WriteLine();
       Console.WriteLine("Example:");
       Console.WriteLine("  xUnitRevit.Headless.Console SampleLibrary.Modern.dll TestResults.xml");
       return 1;
     }
 
-    var assemblyPath = Path.GetFullPath(args[0]);
-    var resultPath = args.Length > 1 ? args[1] : "TestResults.xml";
+    var assemblyPath = Path.GetFullPath(positional[0]);
+    var resultPath = positional.Count > 1 ? positional[1] : "TestResults.xml";
 
     if (!File.Exists(assemblyPath))
     {
@@ -71,13 +92,40 @@ class Program
       Console.WriteLine($"Found {discoveryVisitor.TestCases.Count} tests.");
       Console.WriteLine();
 
+      // Filter out Revit-only tests unless --include-revit was passed
+      const string SkipReason = "Requires Revit runtime — excluded by default (pass --include-revit to run)";
+      var toRun = new List<ITestCase>();
+      foreach (var tc in discoveryVisitor.TestCases)
+      {
+        var isRevit = tc.Traits != null
+          && tc.Traits.TryGetValue("Category", out var vals)
+          && vals.Any(v => string.Equals(v, "Revit", StringComparison.OrdinalIgnoreCase));
+
+        if (!includeRevit && isRevit)
+        {
+          allResults.Add(new TestResult
+          {
+            TestName = tc.DisplayName,
+            ClassName = tc.TestMethod?.TestClass?.Class?.Name,
+            AssemblyName = tc.TestMethod?.TestClass?.TestCollection?.TestAssembly?.Assembly?.Name,
+            Outcome = TestOutcome.Skipped,
+            ErrorMessage = SkipReason
+          });
+          continue;
+        }
+        toRun.Add(tc);
+      }
+
       // Execute
-      Console.WriteLine("Running tests...");
+      Console.WriteLine($"Running {toRun.Count} of {discoveryVisitor.TestCases.Count} tests ({allResults.Count} excluded as Revit-only)...");
       Console.WriteLine(new string('-', 70));
 
-      var executionVisitor = new ConsoleExecutionVisitor(allResults);
-      controller.RunTests(discoveryVisitor.TestCases, executionVisitor, TestFrameworkOptions.ForExecution());
-      executionVisitor.Finished.WaitOne();
+      if (toRun.Count > 0)
+      {
+        var executionVisitor = new ConsoleExecutionVisitor(allResults);
+        controller.RunTests(toRun, executionVisitor, TestFrameworkOptions.ForExecution());
+        executionVisitor.Finished.WaitOne();
+      }
     }
     catch (Exception ex)
     {
@@ -95,7 +143,16 @@ class Program
     stopwatch.Stop();
 
     // Write JUnit XML
-    TestResultWriter.WriteJUnitXml(allResults, resultPath, stopwatch.Elapsed);
+    var infraFailure = false;
+    try
+    {
+      TestResultWriter.WriteJUnitXml(allResults, resultPath, stopwatch.Elapsed);
+    }
+    catch (Exception ex)
+    {
+      Console.Error.WriteLine($"ERROR: Could not write results to '{Path.GetFullPath(resultPath)}': {ex.Message}");
+      infraFailure = true;
+    }
 
     // Summary
     Console.WriteLine(new string('-', 70));
@@ -107,8 +164,10 @@ class Program
     Console.WriteLine();
     Console.WriteLine($"Results: {passed} passed, {failed} failed, {skipped} skipped ({stopwatch.Elapsed.TotalSeconds:F2}s)");
     Console.ResetColor();
-    Console.WriteLine($"JUnit XML written to: {Path.GetFullPath(resultPath)}");
+    if (!infraFailure)
+      Console.WriteLine($"JUnit XML written to: {Path.GetFullPath(resultPath)}");
 
+    if (infraFailure) return 2; // infrastructure failure — results not persisted
     return failed > 0 ? 1 : 0;
   }
 }

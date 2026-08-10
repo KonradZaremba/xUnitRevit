@@ -66,26 +66,38 @@ if (-not $SkipBuild) {
   Copy-Item "$RepoRoot\SampleLibrary.Modern\bin\Debug\net8.0-windows\SampleLibrary.Modern.dll" $PluginDir -Force
   Copy-Item "$RepoRoot\SampleLibrary.Modern\bin\Debug\net8.0-windows\SampleLibrary.Modern.pdb" $PluginDir -Force -ErrorAction SilentlyContinue
 
+  # Copy test models so TestModelLocator finds them next to the deployed DLL
+  Copy-Item "$RepoRoot\SampleLibrary.Modern\bin\Debug\net8.0-windows\TestModels" $PluginDir -Recurse -Force
+
   # Copy addin manifest
   Copy-Item "$RepoRoot\xUnitRevit.Modern\xUnitRevit.addin" "$AddinsDir\xUnitRevit.addin" -Force
+
+  # Sign deployed DLLs with the local dev cert (no-op if setup-signing.ps1 hasn't run)
+  # so Revit skips the "Security - Unsigned Add-In" prompt.
+  & "$RepoRoot\sign-addin.ps1" -Path $PluginDir
 
   Write-Host "Deploy complete." -ForegroundColor Green
 }
 
-# --- Step 4: Write config ---
-$config = @{
-  startupAssemblies = @("$PluginDir\SampleLibrary.Modern.dll")
-  autoStart = $true
-  headless = $true
-  resultFormat = "junit"
-  resultPath = $ResultsPath
-  exitAfterTests = $true
-} | ConvertTo-Json
-Set-Content "$PluginDir\config.json" $config -Encoding UTF8
+# Writes config.json with the shared schema; only the three mode flags vary.
+function Write-XunitConfig([bool]$AutoStart, [bool]$Headless, [bool]$ExitAfterTests) {
+  @{
+    startupAssemblies = @("$PluginDir\SampleLibrary.Modern.dll")
+    autoStart = $AutoStart
+    headless = $Headless
+    resultFormat = "junit"
+    resultPath = $ResultsPath
+    exitAfterTests = $ExitAfterTests
+  } | ConvertTo-Json | Set-Content "$PluginDir\config.json" -Encoding UTF8
+}
+
+# --- Step 4: Write config (headless run) ---
+Write-XunitConfig -AutoStart $true -Headless $true -ExitAfterTests $true
 
 # --- Step 5: Clean previous results ---
 Remove-Item $ResultsPath -ErrorAction SilentlyContinue
 Remove-Item $LogPath -ErrorAction SilentlyContinue
+Remove-Item ([System.IO.Path]::ChangeExtension($ResultsPath, ".done")) -ErrorAction SilentlyContinue
 
 # --- Step 6: Launch Revit ---
 if (-not (Test-Path $RevitExe)) {
@@ -154,6 +166,13 @@ if (-not $process.HasExited) {
     Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
   }
 }
+
+# --- Step 8b: Reset config to dormant so manual Revit launches are NORMAL ---
+# Leaves the add-in deployed but idle (headless=false, autoStart=false), keeping the
+# assembly list so on-demand runs still work. Prevents the runner from hijacking every
+# Revit start into headless test mode.
+Write-XunitConfig -AutoStart $false -Headless $false -ExitAfterTests $false
+Write-Host "Config reset to dormant (Revit will launch normally next time)." -ForegroundColor DarkGray
 
 # --- Step 9: Report results ---
 Write-Host ""

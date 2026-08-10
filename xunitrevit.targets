@@ -1,0 +1,116 @@
+<!--
+  xUnitRevit MSBuild Targets
+
+  Include this in test projects to:
+  1. Auto-deploy xUnitRevit addin to Revit's Addins folder after build
+  2. Copy test DLL to the addin folder so Revit can find it
+  3. Generate config.json for headless test execution
+  4. Provide a "RevitTest" target that launches Revit and runs tests
+
+  Usage in .csproj:
+    <Import Project="path\to\xunitrevit.targets" />
+
+  Properties you can set:
+    <RevitVersion>2026</RevitVersion>       (required)
+    <RevitTestTimeout>600</RevitTestTimeout> (optional, default 600)
+    <RevitTestHeadless>true</RevitTestHeadless> (optional, default true)
+-->
+<Project>
+
+  <PropertyGroup>
+    <RevitVersion Condition="'$(RevitVersion)' == ''">2026</RevitVersion>
+    <RevitTestTimeout Condition="'$(RevitTestTimeout)' == ''">600</RevitTestTimeout>
+    <RevitTestHeadless Condition="'$(RevitTestHeadless)' == ''">true</RevitTestHeadless>
+    <RevitAddinsDir>$(APPDATA)\Autodesk\REVIT\Addins\$(RevitVersion)</RevitAddinsDir>
+    <RevitPluginDir>$(RevitAddinsDir)\xUnitRevit</RevitPluginDir>
+    <xUnitRevitRoot Condition="'$(xUnitRevitRoot)' == ''">$(MSBuildThisFileDirectory)</xUnitRevitRoot>
+    <RevitTestResultsPath>$(MSBuildProjectDirectory)\RevitTestResults.xml</RevitTestResultsPath>
+  </PropertyGroup>
+
+  <!-- After build: copy test DLL to Revit addin folder and generate config -->
+  <Target Name="DeployTestToRevit" AfterTargets="Build">
+    <MakeDir Directories="$(RevitPluginDir)" />
+
+    <!-- Copy test assembly + deps -->
+    <ItemGroup>
+      <TestOutput Include="$(OutputPath)**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(TestOutput)" DestinationFolder="$(RevitPluginDir)\%(RecursiveDir)" SkipUnchangedFiles="true" />
+
+    <!-- Generate config.json -->
+    <PropertyGroup>
+      <_ConfigJson>{
+  "startupAssemblies": ["$(RevitPluginDir)\$(AssemblyName).dll"],
+  "autoStart": true,
+  "headless": $(RevitTestHeadless),
+  "resultFormat": "junit",
+  "resultPath": "$(RevitTestResultsPath)",
+  "exitAfterTests": true
+}</_ConfigJson>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(RevitPluginDir)\config.json" Lines="$(_ConfigJson)" Overwrite="true" />
+
+    <!-- Sign deployed DLLs with the local dev cert so Revit skips the unsigned-add-in
+         prompt. No-ops if setup-signing.ps1 hasn't been run (no .signing-thumbprint). -->
+    <Exec Condition="Exists('$(xUnitRevitRoot).signing-thumbprint')"
+          Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(xUnitRevitRoot)sign-addin.ps1&quot; -Path &quot;$(RevitPluginDir)&quot;"
+          ContinueOnError="true" />
+
+    <Message Text="xUnitRevit: deployed $(AssemblyName).dll to $(RevitPluginDir)" Importance="high" />
+  </Target>
+
+  <!--
+    Custom target: run tests in Revit.
+    Launches Revit directly using the config.json already written by DeployTestToRevit.
+    Does NOT use run-revit-tests.ps1 (which is SampleLibrary-specific).
+  -->
+  <Target Name="RevitTest" DependsOnTargets="Build;DeployTestToRevit">
+    <PropertyGroup>
+      <_RevitExe>C:\Program Files\Autodesk\Revit $(RevitVersion)\Revit.exe</_RevitExe>
+      <_SentinelPath>$(RevitTestResultsPath).done</_SentinelPath>
+    </PropertyGroup>
+
+    <Error Condition="!Exists('$(_RevitExe)')" Text="Revit $(RevitVersion) not found at $(_RevitExe)." />
+
+    <!-- Clean previous results -->
+    <Delete Files="$(RevitTestResultsPath)" Condition="Exists('$(RevitTestResultsPath)')" />
+    <Delete Files="$(_SentinelPath)" Condition="Exists('$(_SentinelPath)')" />
+
+    <!-- Kill existing Revit, launch, wait for results, report -->
+    <Exec Command="powershell -ExecutionPolicy Bypass -Command &quot;&amp; {
+      Get-Process -Name Revit -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+      Start-Sleep -Seconds 2
+      Write-Host 'Launching Revit $(RevitVersion)...'
+      $$proc = Start-Process '$(_RevitExe)' -PassThru
+      $$elapsed = 0
+      while ($$elapsed -lt $(RevitTestTimeout)) {
+        Start-Sleep -Seconds 5
+        $$elapsed += 5
+        if ($$proc.HasExited) { break }
+        if (Test-Path '$(_SentinelPath)') {
+          Write-Host ('Tests completed in ' + $$elapsed + 's')
+          Remove-Item '$(_SentinelPath)' -ErrorAction SilentlyContinue
+          break
+        }
+        if ((Test-Path '$(RevitTestResultsPath)') -and $$elapsed -gt 15) {
+          Start-Sleep -Seconds 2
+          break
+        }
+      }
+      if (-not $$proc.HasExited) {
+        $$proc.CloseMainWindow() | Out-Null
+        if (-not $$proc.WaitForExit(10000)) { Stop-Process -Id $$proc.Id -Force -ErrorAction SilentlyContinue }
+      }
+      if (Test-Path '$(RevitTestResultsPath)') {
+        [xml]$$xml = Get-Content '$(RevitTestResultsPath)'
+        $$r = $$xml.testsuites
+        Write-Host ('Tests: ' + $$r.tests + ' | Passed: ' + ($$r.tests - $$r.failures - $$r.skipped) + ' | Failed: ' + $$r.failures + ' | Skipped: ' + $$r.skipped)
+        if ([int]$$r.failures -gt 0) { exit 1 } else { exit 0 }
+      } else {
+        Write-Host 'ERROR: No results file'
+        exit 1
+      }
+    }&quot;" ConsoleToMSBuild="true" />
+  </Target>
+
+</Project>
