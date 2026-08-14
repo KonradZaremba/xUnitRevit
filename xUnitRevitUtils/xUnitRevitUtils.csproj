@@ -1,0 +1,73 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageProjectUrl>https://github.com/Speckle-Next/xunit-Revit</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Speckle-Next/xunit-Revit</RepositoryUrl>
+    <PackageTags>xunit revit runner</PackageTags>
+    <Authors>Speckle</Authors>
+    <Company>Speckle</Company>
+    <Description>xUnit runner utilities for Revit $(RevitVersion)</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <AssemblyName>xUnitRevitUtils</AssemblyName>
+    <RootNamespace>xUnitRevitUtils</RootNamespace>
+    <PackageId>xUnitRevitUtils.$(RevitVersion)</PackageId>
+    <Version>2.0.0</Version>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <!-- Default RevitVersion if not specified -->
+    <RevitVersion Condition="'$(RevitVersion)' == ''">2023</RevitVersion>
+  </PropertyGroup>
+
+  <!-- Target framework depends on Revit version -->
+  <PropertyGroup Condition="'$(RevitVersion)' == '2021' Or '$(RevitVersion)' == '2022' Or '$(RevitVersion)' == '2023' Or '$(RevitVersion)' == '2024'">
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RevitVersion)' == '2025' Or '$(RevitVersion)' == '2026' Or '$(RevitVersion)' == '2027'">
+    <TargetFramework>net8.0-windows</TargetFramework>
+  </PropertyGroup>
+
+  <!-- Select Revit API NuGet based on version -->
+  <Choose>
+    <When Condition="'$(RevitVersion)' == '2021'">
+      <ItemGroup>
+        <PackageReference Include="ModPlus.Revit.API.2021" Version="1.0.0" ExcludeAssets="runtime" />
+      </ItemGroup>
+    </When>
+    <When Condition="'$(RevitVersion)' == '2022'">
+      <ItemGroup>
+        <PackageReference Include="ModPlus.Revit.API.2022" Version="1.0.0" ExcludeAssets="runtime" />
+      </ItemGroup>
+    </When>
+    <When Condition="'$(RevitVersion)' == '2023'">
+      <ItemGroup>
+        <PackageReference Include="ModPlus.Revit.API.2023" Version="1.0.0" ExcludeAssets="runtime" />
+      </ItemGroup>
+    </When>
+    <When Condition="'$(RevitVersion)' == '2024'">
+      <ItemGroup>
+        <PackageReference Include="ModPlus.Revit.API.2024" Version="1.0.0" ExcludeAssets="runtime" />
+      </ItemGroup>
+    </When>
+    <When Condition="'$(RevitVersion)' == '2025'">
+      <ItemGroup>
+        <PackageReference Include="Autodesk.Revit.SDK" Version="2025.*" ExcludeAssets="runtime" />
+      </ItemGroup>
+    </When>
+    <When Condition="'$(RevitVersion)' == '2026'">
+      <ItemGroup>
+        <PackageReference Include="Autodesk.Revit.SDK" Version="2026.*" ExcludeAssets="runtime" />
+      </ItemGroup>
+    </When>
+    <When Condition="'$(RevitVersion)' == '2027'">
+      <ItemGroup>
+        <!-- Update when Revit 2027 NuGet becomes available -->
+        <PackageReference Include="Autodesk.Revit.SDK" Version="2027.*" ExcludeAssets="runtime" />
+      </ItemGroup>
+    </When>
+  </Choose>
+
+  <ItemGroup>
+    <PackageReference Include="xunit" Version="2.9.3" />
+  </ItemGroup>
+
+</Project>

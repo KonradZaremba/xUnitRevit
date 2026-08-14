@@ -47,9 +47,10 @@ namespace SampleLibrary
     {
       var wall = fixture.Doc.GetElement(new ElementId(346573));
       var param = wall.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET);
-      var baseOffset = UnitUtils.ConvertFromInternalUnits(param.AsDouble(), param.DisplayUnitType);
 
-      Assert.Equal(2000, baseOffset);
+            var baseOffset = UnitUtils.ConvertFromInternalUnits(param.AsDouble(), param.GetUnitTypeId());
+
+            Assert.Equal(2000, baseOffset);
     }
 
     [Fact]
@@ -62,7 +63,7 @@ namespace SampleLibrary
         foreach(var wall in walls)
         {
           var param = wall.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET);
-          var baseOffset = UnitUtils.ConvertToInternalUnits(2000, param.DisplayUnitType);
+          var baseOffset = UnitUtils.ConvertToInternalUnits(2000, param.GetUnitTypeId());
           param.Set(baseOffset);
         }
       }, fixture.Doc)
@@ -71,7 +72,7 @@ namespace SampleLibrary
       foreach (var wall in walls)
       {
         var param = wall.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET);
-        var baseOffset = UnitUtils.ConvertFromInternalUnits(param.AsDouble(), param.DisplayUnitType);
+        var baseOffset = UnitUtils.ConvertFromInternalUnits(param.AsDouble(), param.GetUnitTypeId());
         Assert.Equal(2000, baseOffset);
       }
     }

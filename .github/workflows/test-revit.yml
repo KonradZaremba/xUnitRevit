@@ -1,0 +1,55 @@
+# Run xUnit tests inside Revit (headless mode)
+# Requires a self-hosted runner with Revit installed.
+# Label your runner with 'revit' to match.
+
+name: Revit Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      revitVersion:
+        description: 'Revit version (2025, 2026, 2027)'
+        required: true
+        default: '2026'
+      timeout:
+        description: 'Timeout in seconds'
+        required: false
+        default: '600'
+  pull_request:
+    branches: [master]
+
+jobs:
+  test:
+    runs-on: [self-hosted, windows, revit]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+
+      - name: Run Revit tests
+        shell: pwsh
+        run: |
+          $version = "${{ github.event.inputs.revitVersion || '2026' }}"
+          $timeout = "${{ github.event.inputs.timeout || '600' }}"
+          ./run-revit-tests.ps1 -RevitVersion $version -Timeout $timeout
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-revit${{ github.event.inputs.revitVersion || '2026' }}
+          path: |
+            RevitTestResults.xml
+            RevitTestResults.log
+
+      - name: Publish test report
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Revit Test Results
+          path: RevitTestResults.xml
+          reporter: java-junit

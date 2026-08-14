@@ -1,0 +1,9 @@
+{
+  "startupAssemblies": [
+    "C:\\path\\to\\your\\TestLibrary.dll"
+  ],
+  "autoStart": true,
+  "headless": false,
+  "resultFormat": "junit",
+  "resultPath": "./TestResults.xml"
+}

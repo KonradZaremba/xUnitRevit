@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Xunit;
-using xUnitRevitUtils;
+using xUnitRevitUtils;  
 
 namespace SampleLibrary
 {
@@ -34,8 +34,8 @@ namespace SampleLibrary
     [Fact]
     public void SampleFail()
     {
-      var feet = UnitUtils.ConvertToInternalUnits(3000, DisplayUnitType.DUT_MILLIMETERS);
-      Assert.Equal(5, feet);
+            var feet = UnitUtils.ConvertToInternalUnits(3000, UnitTypeId.Feet);
+            Assert.Equal(5, feet);
     }
 
     [Fact]
@@ -60,12 +60,8 @@ namespace SampleLibrary
           var wallFaceEdges = face.GetEdgesAsCurveLoops();
           grossArea = ExporterIFCUtils.ComputeAreaOfCurveLoops(wallFaceEdges);
           transaction.RollBack();
-
         }
       }, doc).Wait();
-
-
-
       Assert.True(grossArea > 0);
     }
 

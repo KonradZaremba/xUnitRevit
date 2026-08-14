@@ -6,166 +6,246 @@
 
 [![Twitter Follow](https://img.shields.io/twitter/follow/SpeckleSystems?style=social)](https://twitter.com/SpeckleSystems) [![Community forum users](https://img.shields.io/discourse/users?server=https%3A%2F%2Fdiscourse.speckle.works&style=flat-square&logo=discourse&logoColor=white)](https://discourse.speckle.works) [![website](https://img.shields.io/badge/https://-speckle.systems-royalblue?style=flat-square)](https://speckle.systems) [![docs](https://img.shields.io/badge/docs-speckle.guide-orange?style=flat-square&logo=read-the-docs&logoColor=white)](https://speckle.guide/dev/)
 
+> **New here? See [QUICKSTART.md](QUICKSTART.md)** for a step-by-step setup + testing guide (signing, console runner, headless, in-Revit UI).
+
 ## Introduction
 
-An xUnit runner for Autodesk Revit. 
+An xUnit runner for Autodesk Revit.
 
 Check out our blog post on this 👉 https://speckle.systems/blog/xunitrevit !
 
-xUnitRevit uses [speckle.xunit.runner.wpf](https://github.com/Speckle-Next/speckle.xunit.runner.wpf) which is a fork of [xunit.runner.wpf](https://github.com/Pilchie/xunit.runner.wpf), it allows to easily develop and run xUnit tests in Revit. 
+xUnitRevit uses [speckle.xunit.runner.wpf](https://github.com/Speckle-Next/speckle.xunit.runner.wpf) which is a fork of [xunit.runner.wpf](https://github.com/Pilchie/xunit.runner.wpf), it allows to easily develop and run xUnit tests in Revit.
 
 Many thanks to all the developers of xunit and xunit.runner.wpf!
 
 ### Structure
 
-This repo is composed of 2 projects:
+This repo is composed of the following projects:
 
-- **xUnitRevit**: the actual Revit addin
-- **xUnitRevitUtils**: a utility library to help pass Revit data to the test libraries when running the tests
+**Modern (.NET 8 — Revit 2025+):**
+- **xUnitRevit.Modern**: Revit addin with UI runner and headless mode for CI/CD
+- **xUnitRevitUtils**: shared utility library (`xru` static class) for both UI and headless modes
+- **SampleLibrary.Modern**: sample tests — basic assertions + Revit API tests
+- **xUnitRevit.Headless.Console**: standalone console runner for testing the pipeline without Revit
+
+**Legacy (.NET Framework — Revit 2021–2023):**
+- **xUnitRevit**: the original Revit addin (WPF UI runner)
 
 
 
 ## Getting Started
 
-There are very few steps required to create and run your fist unit tests with xUnitRevit:
+### Modern (Revit 2025+ / .NET 8)
 
-1. create a copy of the [config sample file](xUnitRevit/config_sample.json) and re-name the copy to `config.json`
-2. follow the instructions [here](#configuration) to set up the config file 
-2. build/install xUnitRevit
-3. create a test library
-4. start Revit, launch the xUnitRevit addin and select the test library
-5. done! Add a star ⭐ to our repo if it was useful 😉
+1. Copy `xUnitRevit.Modern/config_sample.json` to `config.json`
+2. Build with the configuration matching your Revit version:
+   ```
+   dotnet build xUnitRevit.Modern/xUnitRevit.Modern.csproj -c Debug2026
+   ```
+   Available configurations: `Debug2025`, `Debug2026`, `Debug2027`
+3. The post-build step copies DLLs and `.addin` manifest to `%appdata%\Autodesk\Revit\Addins\<version>\`
+4. Create a test library targeting `net8.0-windows` with references to `xunit` and `xUnitRevitUtils`
+5. Add your test DLL path to `config.json` → `startupAssemblies`
+6. Start Revit — use the UI runner or enable headless mode
 
-### Building/installing xUnitRevit
+#### Headless / CI mode
 
-After cloning this repo, all you need to do to run xUnitRevit is to build the project in **Debug mode**, by selecting the build configuration that matches your Revit version.
+Set `headless: true` in `config.json` to run tests automatically on Revit startup and output JUnit XML results:
 
-![image](https://user-images.githubusercontent.com/2679513/88941424-e5b96200-d280-11ea-8ef4-12fbb0ed13d2.png)
+```json
+{
+  "startupAssemblies": ["C:\\path\\to\\MyTests.dll"],
+  "autoStart": true,
+  "headless": true,
+  "resultFormat": "junit",
+  "resultPath": "C:\\output\\TestResults.xml"
+}
+```
 
-**This will build the project and copy its dlls to the Revit addin folder** `%appdata%\Autodesk\Revit\Addins`.
+Tests run on a background thread. Revit API calls (document opens, element queries, transactions) are dispatched to the main thread via the `Idling` event — document tests work fully in headless mode. Results are written as JUnit XML, compatible with GitHub Actions, Azure Pipelines, and Jenkins.
 
-You can also, similarly, build the project in **Release mode**, and manually copy the built files from `xunit-Revit\Release`.
+#### Code signing (skips Revit's "unsigned add-in" prompt)
+
+Revit prompts to trust unsigned add-ins, and the add-in cannot dismiss its **own** load prompt. Run this once per machine to create and trust a local self-signed cert (no admin, no purchase):
+
+```powershell
+./setup-signing.ps1
+```
+
+Every build and deploy then auto-signs the add-in DLLs (`sign-addin.ps1`, wired into the build, `run-revit-tests.ps1`, and `xunitrevit.targets`). The cert is local-dev only — it does not help on other machines.
+
+#### Automated test runner
+
+Builds, deploys (signed), launches Revit, waits for results, reports, then **resets `config.json` to dormant** so your next manual Revit launch is normal (not hijacked into headless test mode):
+
+```powershell
+./run-revit-tests.ps1 -RevitVersion 2026
+./run-revit-tests.ps1 -RevitVersion 2025 -Timeout 600
+./run-revit-tests.ps1 -SkipBuild  # use already-deployed DLLs
+```
+
+The console runner skips `[Trait("Category", "Revit")]` tests by default (`--include-revit` to run them) and returns exit codes `0` (pass), `1` (test failures), `2` (infrastructure failure). The in-Revit runner window shows colored pass/fail/skip badges and a **📋 Copy Report** button that copies a text summary to the clipboard.
+
+#### Per-version test models (faster runs)
+
+Opening the shared older-format `walls.rvt` makes Revit upgrade it in-memory (~28 s) every run. Save a native copy per version — `SampleLibrary/TestModels/walls_2026.rvt` — and `TestModelLocator` prefers `walls_<version>.rvt`, falling back to `walls.rvt`. Native opens are near-instant; older versions still work via the fallback.
+
+#### Console runner (no Revit required)
+
+For testing the pipeline or running non-Revit tests:
+
+```
+dotnet run --project xUnitRevit.Headless.Console -- MyTests.dll TestResults.xml
+```
+
+### Legacy (Revit 2021–2023 / .NET Framework)
+
+1. Copy `xUnitRevit/config_sample.json` to `config.json`
+2. Build in **Debug mode** with the matching build configuration (e.g., `Debug2023`)
+3. The post-build step copies DLLs to the Revit addin folder
+4. Start Revit, launch xUnitRevit, and select your test library
 
 ### Creating a test library
 
-Creating a test library is pretty straightforward, at least we tried to make it as simple as possible!
+**For Revit 2025+ (.NET 8):**
+- Create a `net8.0-windows` class library
+- Add NuGet packages: `xunit`, `Autodesk.Revit.SDK`
+- Add a project reference to `xUnitRevitUtils`
 
-Just follow the steps below for Revit 2021:
-
-- create a new .net framework class library project (4.8 for Revit 2021)
-- add the NuGet packages
-  - `xunit`
-  - `xUnitRevitUtils.2021`
+**For Revit 2021–2023 (.NET Framework):**
+- Create a .NET Framework 4.8 class library
+- Add NuGet packages: `xunit`, `xUnitRevitUtils.2021` (or `.2022`, `.2023`)
 
 That's it, now we can start adding our tests.
 
 #### Writing a simple test
 
-To do almost anything with the Revit API you need a reference to the active Document, and this is where xUnitRevitUtils comes into play, with its `xru` static class. The code below shows how we can use it to get a list of Walls and check their properties.
+To do almost anything with the Revit API you need a reference to the active Document, and this is where xUnitRevitUtils comes into play, with its `xru` static class. All Revit API calls must be dispatched to the main thread — `xru.DispatchToMainThread()` handles this in both UI and headless mode.
 
-Full code : https://github.com/Speckle-Next/xUnitRevit/blob/master/SampleLibrary/SampleTest.cs
+Full code: [SampleLibrary.Modern/RevitTests.cs](SampleLibrary.Modern/RevitTests.cs)
 
 ```csharp
-  [Fact]
-public void WallsHaveVolume()
+[Collection("Revit")]
+public class ElementCollectorTests
 {
-  var testModel = GetTestModel("walls.rvt");
-  var doc = xru.OpenDoc(testModel);
+  private readonly Document _doc;
+  public ElementCollectorTests(WallsDocFixture fixture) { _doc = fixture.Doc; }
 
-  var walls = new FilteredElementCollector(doc).WhereElementIsNotElementType().OfCategory(BuiltInCategory.OST_Walls).ToElements();
-
-  foreach(var wall in walls)
+  [Fact]
+  public void WallsHaveValidVolume()
   {
-    var volumeParam = wall.get_Parameter(BuiltInParameter.HOST_VOLUME_COMPUTED);
-    Assert.NotNull(volumeParam);
-    Assert.True(volumeParam.AsDouble() > 0);
+    IList<Element> walls = null;
+    xru.DispatchToMainThread(() =>
+    {
+      walls = new FilteredElementCollector(_doc)
+        .WhereElementIsNotElementType()
+        .OfCategory(BuiltInCategory.OST_Walls)
+        .ToElements();
+    });
+
+    foreach (var wall in walls)
+    {
+      Parameter volumeParam = null;
+      xru.DispatchToMainThread(() =>
+      {
+        volumeParam = wall.get_Parameter(BuiltInParameter.HOST_VOLUME_COMPUTED);
+      });
+      Assert.NotNull(volumeParam);
+      Assert.True(volumeParam.AsDouble() > 0);
+    }
   }
-  doc.Close(false);
 }
 ```
 
 #### Writing tests with fixtures
 
-To be able to share context between tests, xUnits uses [fixtures](https://xunit.net/docs/shared-context). We can use fixtures for instance, to open a Revit model only once and use it across multiple tests.
+To share context between tests (e.g. open a Revit model once), use xUnit [collection fixtures](https://xunit.net/docs/shared-context). All Revit test classes must share a `[Collection]` so they run sequentially — parallel document opens crash Revit.
 
-Let's see an example, full code: https://github.com/Speckle-Next/xUnitRevit/blob/master/SampleLibrary/TestWithFixture.cs
+Full code: [SampleLibrary.Modern/RevitTests.cs](SampleLibrary.Modern/RevitTests.cs)
 
 ```csharp
-public class DocFixture : IDisposable
+// Fixture: opens the document once, shared across all test classes in the collection
+public class WallsDocFixture : IDisposable
 {
-  public Document Doc { get; set; }
-  public IList<Element> Walls { get; set; }
+  public Document Doc { get; }
 
-
-  public DocFixture()
+  public WallsDocFixture()
   {
-    var testModel = Utils.GetTestModel("walls.rvt");
+    var testModel = TestModelLocator.GetTestModel("walls.rvt");
     Doc = xru.OpenDoc(testModel);
-
-    Walls = new FilteredElementCollector(Doc).WhereElementIsNotElementType().OfCategory(BuiltInCategory.OST_Walls).ToElements();
   }
 
-  public void Dispose()
-  {
-  }
+  public void Dispose() { }
 }
-public class TestWithFixture : IClassFixture<DocFixture>
+
+// Collection definition — binds the fixture and prevents parallel execution
+[CollectionDefinition("Revit")]
+public class RevitCollection : ICollectionFixture<WallsDocFixture> { }
+
+// Test class — receives the fixture via constructor injection
+[Collection("Revit")]
+public class RevitDocumentTests
 {
-  DocFixture fixture; 
-  public TestWithFixture(DocFixture fixture)
-  {
-    this.fixture = fixture;
-  }
+  private readonly WallsDocFixture _fixture;
+  public RevitDocumentTests(WallsDocFixture fixture) { _fixture = fixture; }
 
   [Fact]
-  public void CountWalls()
+  public void CanOpenDocument()
   {
-    Assert.Equal(4, fixture.Walls.Count);
-  }
-
-  [Fact]
-  public void WallOffset()
-  {
-    var wall = fixture.Doc.GetElement(new ElementId(346573));
-    var param = wall.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET);
-    var baseOffset = UnitUtils.ConvertFromInternalUnits(param.AsDouble(), param.DisplayUnitType);
-
-    Assert.Equal(2000, baseOffset);
+    Assert.NotNull(_fixture.Doc);
+    Assert.False(_fixture.Doc.IsFamilyDocument);
   }
 }
 ```
 
-#### Writing test that use Revit transactions
+#### Writing tests that use Revit transactions
 
-Another feature of xUnitRevitUtils is that it offers a helper method to run Transactions, so you don't have to worry about that 🤯! Check the example below: https://github.com/Speckle-Next/xUnitRevit/blob/master/SampleLibrary/TestWithFixture.cs
+`xru.RunInTransaction()` wraps your action in a transaction and dispatches it to the main thread. Always `.Wait()` to block until the transaction completes.
 
 ```csharp
-[Fact]
-public void MoveWallsUp()
+[Collection("Revit")]
+public class TransactionTests
 {
-  var walls = fixture.Walls.Where(x => x.Id.IntegerValue != 346573);
+  private readonly Document _doc;
+  public TransactionTests(WallsDocFixture fixture) { _doc = fixture.Doc; }
 
-  xru.RunInTransaction(() =>
+  [Fact]
+  public void ModifyWallParameterAndRollBack()
   {
-    foreach(var wall in walls)
+    Wall wall = null;
+    Parameter offsetParam = null;
+    double originalOffset = 0;
+
+    xru.DispatchToMainThread(() =>
     {
-      var param = wall.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET);
-      var baseOffset = UnitUtils.ConvertToInternalUnits(2000, param.DisplayUnitType);
-      param.Set(baseOffset);
-    }
-  }, fixture.Doc)
-  .Wait(); // Important! Wait for action to finish
+      wall = new FilteredElementCollector(_doc)
+        .WhereElementIsNotElementType()
+        .OfCategory(BuiltInCategory.OST_Walls)
+        .FirstElement() as Wall;
 
-  foreach (var wall in walls)
-  {
-    var param = wall.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET);
-    var baseOffset = UnitUtils.ConvertFromInternalUnits(param.AsDouble(), param.DisplayUnitType);
-    Assert.Equal(2000, baseOffset);
+      offsetParam = wall.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET);
+      originalOffset = offsetParam.AsDouble();
+    });
+
+    xru.Run(() =>
+    {
+      using (Transaction t = new Transaction(_doc, "Test - Modify Offset"))
+      {
+        t.Start();
+        offsetParam.Set(originalOffset + 5.0);
+        t.RollBack();
+      }
+    }, _doc).Wait(); // Important! Wait for action to finish
+
+    double finalOffset = 0;
+    xru.DispatchToMainThread(() =>
+    {
+      finalOffset = offsetParam.AsDouble();
+    });
+    Assert.Equal(originalOffset, finalOffset, precision: 5);
   }
 }
 ```
-
-![image](https://user-images.githubusercontent.com/2679513/88953549-025d9600-d291-11ea-8ec4-58c85c84c5aa.png)
 
 
 
@@ -173,20 +253,22 @@ public void MoveWallsUp()
 
 ### Configuration
 
-We've added a couple of optional settings for lazy developers like me, to help speed up frequent testing of a test library. You'll see a `config_sample.json` in the root of the project. Copy the file and rename the copy to `config.json` and set it to `copy local = true`. You'll then be able to configure
+Copy `config_sample.json` to `config.json` (next to the xUnitRevit DLL). Available settings:
 
-- `startupAssemblies`: if set, automatically loads a set of assemblies when xUnitRevit starts
-- `autoStart`: if true, automatically opens the xUnitRevit window after Revit loads
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `startupAssemblies` | `string[]` | `[]` | Paths to test DLLs to load on startup |
+| `autoStart` | `bool` | `false` | Auto-open the test runner window (UI mode) or auto-run tests (headless) |
+| `headless` | `bool` | `false` | Run tests without UI, output results to file |
+| `resultFormat` | `string` | `"junit"` | Output format for test results |
+| `resultPath` | `string` | `"./TestResults.xml"` | Path for test result output |
+| `exitAfterTests` | `bool` | `false` | Write a `.done` sentinel when tests finish (the automation script then closes Revit) |
+
+**Two modes.** With `headless:false, autoStart:false` (the default, and what `run-revit-tests.ps1` leaves behind) the add-in loads but stays idle — Revit works normally and you run tests on demand via **Add-Ins ▸ External Tools ▸ xUnitRevit**. Set `headless:true` only for automated/CI runs; leaving it on makes Revit auto-run tests on every launch.
 
 ### Dll locking
 
-Dlls loaded by xUnitRevit are loaded in Revit's AppDomain, and therefore it's not possible to recompile them until Revit is closed (even if you see an auto reload option in the UI). But don't despair, since Revit 2020 it's possible to *edit & continue* your code while debugging, so you won't have to restart Revit each time.
-
-### Next steps
-
-As for next steps, we're planning to add additional features to run xUnitRevit from a CI/CD routine. 
-
-Stay tuned!
+DLLs loaded by xUnitRevit are loaded in Revit's AppDomain, and therefore it's not possible to recompile them until Revit is closed (even if you see an auto reload option in the UI). Since Revit 2020 it's possible to *edit & continue* your code while debugging, so you won't have to restart Revit each time.
 
 ## Contributing
 
