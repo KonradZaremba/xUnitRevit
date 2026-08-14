@@ -49,13 +49,9 @@ namespace xUnitRevit
         Runner.ReadConfig();
         Log($"Config: headless={Runner.Config.headless}, autoStart={Runner.Config.autoStart}, assemblies={Runner.Config.startupAssemblies?.Count}");
 
-        // Suppress Revit dialog boxes that can block headless/automated runs
-        a.ControlledApplication.FailuresProcessing += (s, args) =>
-        {
-          args.GetFailuresAccessor().DeleteAllWarnings();
-        };
-        a.DialogBoxShowing += OnDialogBoxShowing;
-        Log("Dialog suppression registered");
+        // Dialog/warning suppression is applied per-run (DialogSuppression.Begin/End), never globally —
+        // leaving it on breaks other add-ins and eats the user's warnings. Just wire it up here.
+        DialogSuppression.Configure(a);
 
         if (Runner.Config.headless)
         {
@@ -63,6 +59,9 @@ namespace xUnitRevit
           a.ControlledApplication.ApplicationInitialized += OnApplicationInitialized_Headless;
           // Register Idling to pump work queue — tests dispatch Revit API calls to main thread
           a.Idling += HeadlessRunner.OnIdling;
+          // End suppression once the run finishes (complete / failed / crashed within the run),
+          // even if this Revit session is left running rather than killed by the automation script.
+          a.Idling += OnIdling_HeadlessCleanup;
           Log("Registered Idling for headless work queue dispatch");
         }
         else
@@ -81,25 +80,6 @@ namespace xUnitRevit
       }
     }
 
-    private void OnDialogBoxShowing(object sender, Autodesk.Revit.UI.Events.DialogBoxShowingEventArgs e)
-    {
-      Log($"Dialog suppressed: {e.DialogId}");
-      // Auto-accept/dismiss all dialogs to prevent blocking automated runs
-      if (e is Autodesk.Revit.UI.Events.TaskDialogShowingEventArgs taskDialog)
-      {
-        // For "load addon" dialogs, accept. For others, cancel.
-        var id = taskDialog.DialogId ?? "";
-        if (id.Contains("Load") || id.Contains("Trust") || id.Contains("Always"))
-          taskDialog.OverrideResult((int)Autodesk.Revit.UI.TaskDialogResult.Ok);
-        else
-          taskDialog.OverrideResult((int)Autodesk.Revit.UI.TaskDialogResult.Close);
-      }
-      else
-      {
-        e.OverrideResult(1); // IDOK — accept
-      }
-    }
-
     private void OnApplicationInitialized_Headless(object sender, Autodesk.Revit.DB.Events.ApplicationInitializedEventArgs e)
     {
       Log("ApplicationInitialized (headless) fired");
@@ -107,6 +87,7 @@ namespace xUnitRevit
       {
         Application app = sender as Application;
         Log($"App version: {app?.VersionNumber}");
+        DialogSuppression.Begin(); // whole headless session is the run
         HeadlessRunner.Launch(app, Runner.Config);
         Log("HeadlessRunner.Launch completed");
       }
@@ -114,6 +95,19 @@ namespace xUnitRevit
       {
         Log($"Headless ERROR: {ex}");
       }
+    }
+
+    /// <summary>
+    /// Ends dialog/warning suppression once the headless run has finished, restoring Revit to
+    /// normal handling. Runs on the main thread (Idling) and unhooks itself.
+    /// </summary>
+    private void OnIdling_HeadlessCleanup(object sender, Autodesk.Revit.UI.Events.IdlingEventArgs e)
+    {
+      if (!HeadlessRunner.TestsComplete) return;
+
+      DialogSuppression.End();
+      _uiCtrlApp.Idling -= OnIdling_HeadlessCleanup;
+      Log("Headless cleanup: suppression ended, Revit restored to normal state.");
     }
 
     private void OnIdling_LaunchUI(object sender, Autodesk.Revit.UI.Events.IdlingEventArgs e)
@@ -144,6 +138,7 @@ namespace xUnitRevit
     public Result OnShutdown(UIControlledApplication a)
     {
       Log("OnShutdown called");
+      DialogSuppression.End(); // final safety net — never leave suppression active
       return Result.Succeeded;
     }
   }

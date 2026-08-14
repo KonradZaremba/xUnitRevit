@@ -313,6 +313,7 @@ namespace xUnitRevit
     public async Task RunAllTests()
     {
       IsRunning = true;
+      DialogSuppression.Begin(); // suppress Revit dialogs/warnings for the duration of the run only
       PassedCount = 0;
       FailedCount = 0;
       SkippedCount = 0;
@@ -324,27 +325,40 @@ namespace xUnitRevit
         test.Message = "";
       }
 
-      var assemblies = Tests.Select(t => t.AssemblyPath).Distinct();
-
-      foreach (var assemblyPath in assemblies)
+      try
       {
-        await RunTestsInAssembly(assemblyPath, Tests.Where(t => t.AssemblyPath == assemblyPath).ToList());
-      }
+        var assemblies = Tests.Select(t => t.AssemblyPath).Distinct();
 
-      IsRunning = false;
+        foreach (var assemblyPath in assemblies)
+        {
+          await RunTestsInAssembly(assemblyPath, Tests.Where(t => t.AssemblyPath == assemblyPath).ToList());
+        }
+      }
+      finally
+      {
+        DialogSuppression.End(); // restore normal Revit dialog/warning handling
+        IsRunning = false;
+      }
     }
 
     public async Task RunSelectedTests()
     {
       IsRunning = true;
-      var selected = Tests.Where(t => t.IsSelected).ToList();
-
-      foreach (var assemblyPath in selected.Select(t => t.AssemblyPath).Distinct())
+      DialogSuppression.Begin();
+      try
       {
-        await RunTestsInAssembly(assemblyPath, selected.Where(t => t.AssemblyPath == assemblyPath).ToList());
-      }
+        var selected = Tests.Where(t => t.IsSelected).ToList();
 
-      IsRunning = false;
+        foreach (var assemblyPath in selected.Select(t => t.AssemblyPath).Distinct())
+        {
+          await RunTestsInAssembly(assemblyPath, selected.Where(t => t.AssemblyPath == assemblyPath).ToList());
+        }
+      }
+      finally
+      {
+        DialogSuppression.End();
+        IsRunning = false;
+      }
     }
 
     private Task RunTestsInAssembly(string assemblyPath, List<TestCaseViewModel> tests)
